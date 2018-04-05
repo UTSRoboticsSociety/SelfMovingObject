@@ -2,8 +2,6 @@ import numpy as np
 import argparse
 import cv2
 
-
-
 class ColorPicker:
     def __init__(self):
         # initialize the list of reference points and boolean indicating
@@ -151,6 +149,19 @@ def mask_colors(frame, hsvUpper, hsvLower):
 
     return mask
 
+# returns center over the lane detecting lines
+def laneDetect(numbers):
+    numbers = numbers.flatten()
+    value = 0
+    count = 0
+    for i in range(300):
+        if (numbers[i] > 0):
+            value = value + 1 * i
+            count = count + 1
+    if(count > 0):
+        value = (int) (value / count)
+    return value
+
 
 def main():
     # Loading Video
@@ -158,11 +169,15 @@ def main():
 
     image = cv2.imread('image.png')
     height, width = image.shape[:2]
-    image = cv2.resize(image,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
+    #image = cv2.resize(image,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
+
     # Pick the lane colors and object color
     rightupper, rightlower = ColorPicker().select_color(image.copy(), "select right lane")
     leftupper, leftlower = ColorPicker().select_color(image.copy(), "select left lane")
     objectupper, objectlower = ColorPicker().select_color(image.copy(), "select select object")
+
+    lv = 0
+    rv = 0;
 
     while(True):
         if (cap.isOpened()):
@@ -214,11 +229,32 @@ def main():
                 canny_image = cv2.Canny(blur_image, low_threshold, high_threshold)
                 canny_image = cv2.cvtColor(canny_image, cv2.COLOR_GRAY2BGR)
 
+                #grabs thin line of pixels for lane detection
+                leftPixels =  cv2.cvtColor(blur_image[500:501,100:400], cv2.COLOR_BGR2GRAY)
+                rightPixels =  cv2.cvtColor(blur_image[500:501, (960 - 400): (960 - 100)], cv2.COLOR_BGR2GRAY)
+                if(laneDetect(leftPixels) > 0 or lv == None):
+                    lv = laneDetect(leftPixels)
+                if(laneDetect(rightPixels) > 0 or rv == None):
+                    rv = laneDetect(rightPixels)
+
+                # draw lines over the image for lane detection
+                #cv2.line(image, (100,500), (400, 500), (0,255,0), 2, 8, 0)
+                #cv2.line(image, (960 - 400,500), (960 - 100, 500), (0,255,0), 2, 8, 0)
+                cv2.line(blur_image, (100,500), (400, 500), (0,255,0), 2, 8, 0)
+                cv2.line(blur_image, (960 - 400,500), (960 - 100, 500), (0,255,0), 2, 8, 0)
+
+                cv2.line(blur_image, ((100 + lv), 450), ((100 + lv), 550 ) , (255,100,0), 2, 8, 0)
+                cv2.line(blur_image, ((560 + rv), 450), ((560 + rv), 550 ) , (255,100,0), 2, 8, 0)
+
+
                 # Stack source image with lane image and display
                 display = np.hstack((image, blur_image))
                 display = cv2.resize(display, (1080,500))
                 cv2.imshow("Lane Detection", display)
                 cv2.waitKey(50)
+
+
+
 
 
             except cv2.error as e:
