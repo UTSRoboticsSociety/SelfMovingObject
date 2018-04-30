@@ -9,7 +9,7 @@ class Camera(object):
         self.image_raw = None
         self.image_resize = None
         self.cropped_image = None
-        self.border_size = 330
+        self.border_size = 0
         self.retval = None
         self.video_feed = None
         self.video_writer = None

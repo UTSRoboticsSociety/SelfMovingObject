@@ -17,9 +17,9 @@ class LaneDetector(object):
         self.lane_object_mask = None
         self.complete_mask = None
 
-        self.lane_height = 450
+        self.lane_height = 370
         self.lane_width = 300
-        self.lane_screen_size_multiplier = 919
+        self.lane_screen_size_multiplier = 640
         self.lane_cross_over_color = [0,255,0]
         self.lane_direction_line_color = [255,100,0]
         self.lane_line_thickness = 2
@@ -60,9 +60,11 @@ class LaneDetector(object):
 
     # returns center over the lane detecting lines
     def laneDetect(self, numbers, width):
+
         numbers = numbers.flatten()
         value = 0
         count = 0
+
         for i in range(width):
             if (numbers[i] > 0):
                 value = value + 1 * i
@@ -72,6 +74,7 @@ class LaneDetector(object):
         return value
 
     def draw_direction_lines(self, mask_image):
+        self.lane_screen_size_multiplier = mask_image.shape[1]
         blur_image = self.get_blur_image(mask_image)
 
         lx1 = 0 # ~ lx1 is is left x coord of the first line
@@ -82,11 +85,10 @@ class LaneDetector(object):
         #grabs thin line of pixels for lane detection
         leftPixels =  cv2.cvtColor(blur_image[self.lane_height:self.lane_height + 1,lx1:rx1], cv2.COLOR_BGR2GRAY)
         rightPixels =  cv2.cvtColor(blur_image[self.lane_height:self.lane_height + 1,lx2:rx2], cv2.COLOR_BGR2GRAY)
-        if(self.laneDetect(leftPixels, self.lane_width) > 0 or self.lv == None):
-            self.lv = self.laneDetect(leftPixels, self.lane_width)
-        if(self.laneDetect(rightPixels, self.lane_width) > 0 or self.rv == None):
-            self.rv = self.laneDetect(rightPixels, self.lane_width)
-
+        if(self.laneDetect(numbers = leftPixels, width = self.lane_width) > 0 or self.lv == None):
+            self.lv = self.laneDetect(numbers = leftPixels, width = self.lane_width)
+        if(self.laneDetect(numbers = rightPixels, width = self.lane_width) > 0 or self.rv == None):
+            self.rv = self.laneDetect(numbers = rightPixels, width = self.lane_width)
         # Draw lines over the image for lane detection
         leftline = lx1 + self.lv
         rightline = lx2 + self.rv
@@ -118,11 +120,10 @@ class LaneDetector(object):
         if(midline > self.travel_right_limit): output = "Right"
         if(midline < self.travel_slight_left_right_limit and midline > self.travel_slight_left_left_limit): output = "Slight Left"
         if(midline < self.travel_left__limit): output = "Left"
-        print(output)
 
         self.blur_image = blur_image.copy()
 
-        return self.blur_image
+        return self.blur_image, midline
 
 
     def edge_detection(self, mask_image):
@@ -145,14 +146,20 @@ class BGRDetector(LaneDetector):
     def __init__(self):
         super(BGRDetector, self).__init__
         LaneDetector.__init__(self)
-        self.BGR_Blue_Upper = np.array([255,185,80], dtype = "uint8")
-        self.BGR_Yellow_Upper = np.array([180,255,255], dtype = "uint8")
+
+
+        self.BGR_Blue_Upper = np.array([255,240,190], dtype = "uint8")
+        self.BGR_Blue_Lower =  np.array([140,100,120], dtype = "uint8")
+
+        self.BGR_Yellow_Upper = np.array([0,0,1], dtype = "uint8")
         self.BGR_Object_Upper = np.array([0,0,1], dtype = "uint8")
 
-        self.BGR_Blue_Lower =  np.array([100,40,4], dtype = "uint8")
-        self.BGR_Yellow_Lower = np.array([100,200,200], dtype = "uint8")
+        # iy 200,200,100
+        #iB 170 100 40
+        self.BGR_Yellow_Lower = np.array([0,135,165], dtype = "uint8")
         self.BGR_Object_Lower = np.array([0,0,4], dtype = "uint8")
 
+        #no 193 193 193
 
     def set_colors(self,
                    BGR_Blue_Upper,BGR_Yellow_Upper,BGR_Object_Upper,

@@ -5,9 +5,14 @@ import imutils
 import Camera
 import LaneDetector
 import ColorPicker
-
+import Serial2
+import serial
 
 def main():
+
+
+
+
     camera = None
     detector = None
     color_Picker = None
@@ -17,7 +22,7 @@ def main():
     complete_mask_image = None
     direction_line_image = None
     detector_type = "RGBDetector"
-    video_resize_width = 960
+    video_resize_width = 1080
 
     blue_upper = []
     yellow_upper = []
@@ -30,7 +35,10 @@ def main():
     videonumber = 1
     url = ('Videos/video' + str(videonumber) + '.mp4')
 
-    camera = Camera.Camera(video_source = url)
+    camera = Camera.Camera(video_source = 0)
+
+    seri = Serial2.Serial2('COM8',9600,8,serial.PARITY_NONE,1,2,False,True,2,False,None)
+
     camera.open_video()
 
     work_image = camera.get_frame()
@@ -58,13 +66,23 @@ def main():
 
 
     while camera.playing():
+        while camera.get_frame() is None:
+            continue
+
         work_image = camera.get_resize_image(width_size = video_resize_width)
         cropped_image = camera.crop_border_image(image = work_image)
 
         complete_mask = detector.get_lanes(base_frame = work_image,
                                            cropped_frame = cropped_image)
         if complete_mask is not None:
-             direction_line_image = detector.draw_direction_lines(mask_image = complete_mask)
+             direction_line_image, value = detector.draw_direction_lines(mask_image = complete_mask)
+        # Send a value to the arduino fofr the servo angle
+        value = str((int ((value - 320) / 2)) + 90)
+        speed = 1420
+
+        message =  "{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[" + str(speed) + "," + value + "]}";
+        seri.sendMessage(message,11)
+
 
         # Stack source image with lane image and display
         display = np.hstack((work_image, direction_line_image))

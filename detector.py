@@ -165,8 +165,8 @@ def laneDetect(numbers, width):
 
 def main():
     # Loading Video
-    cap = cv2.VideoCapture(url)
-
+    #cap = cv2.VideoCapture(url)
+    cap = cv2.VideoCapture(0)
     image = cv2.imread('image.png')
     height, width = image.shape[:2]
     #image = cv2.resize(image,(2*width, 2*height), interpolation = cv2.INTER_CUBIC)
