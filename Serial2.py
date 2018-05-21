@@ -1,5 +1,7 @@
 import serial
 import time
+import serial.tools.list_ports
+
 
 class Serial2(object):
     def __init__(self, port, baud, bytesize, parity, stopbits, timeout, xonxoff, rtscts, writetimeout, dstdtr, intercharttimeout):
@@ -22,6 +24,10 @@ class Serial2(object):
     def openSerial (self,message,length):
         if(self.usingSerial):
             try:
+			    ports = list(serial.tools.list_ports.comports())
+                for p in ports:
+                    if 'Arduino' in p.description
+					    self.port = p
                 self.ser = serial.Serial(self.port,self.baud,8,self.parity,self.stopbits,self.timeout,self.xonxoff,self.rtscts,self.writetimeout,self.dstdtr,self.intercharttimeout)  # open serial port
                 print (self.ser.portstr+" opened")       # check which port was really used
                 print ("Port %s set to %d %s%s%s (%ds timeout)" % (self.port,self.baud,self.bytesize,self.parity,self.stopbits,self.timeout))
