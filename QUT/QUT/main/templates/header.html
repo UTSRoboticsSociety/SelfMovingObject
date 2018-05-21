@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang ='en'>
+
+<head>
+	<title>UTS QUT DRC</title>
+	<meta charset="utf-8" />
+	{% load staticfiles %}
+	<link rel="stylesheet" href="{% static 'personal/css/bootstrap.min.css' %}" type = "text/css"/>
+	<meta name="viewport" content = "width=device-width, initial-scale=1.0">
+	
+	<style type="text/css">
+		html,
+		body {
+		  height:100%
+		}
+	</style>
+	
+</head>
+
+<body class="body" style="background-color:Gray">
+	<div class="container-fluid" style="min-height:95%; ">
+		<div class="row">
+			  <div class="col-sm-8">
+				  <br>
+				  <center>
+					<img src="{% static 'personal/img/image.jpg' %}" class="responsive-img" style='max-height:100px;' alt="face">
+				  </center>
+			  </div>
+		</div><hr>	
+	<div class="row">
+		  <div class="col-sm-2">
+		  <br>
+
+		  <br>
+			<div class="well bs-sidebar" id="sidebar" style="background-color:#fff">
+			  <ul class="nav nav-pills nav-stacked">
+				<li><a href='/'>UP</a></li>
+			  </ul>
+			</div>
+		  </div>
+					<div class="row">
+							<div class="col-sm-1">
+							<br>
+
+							<br>
+								<div class="well bs-sidebar" id="sidebar" style="background-color:#fff">
+								   <ul class="nav nav-pills nav-stacked">
+										<li><a href='/'>LEFT</a></li>
+								  </ul>
+								</div>
+							</div>
+							<div class="col-sm-2">
+								<br>
+								
+								<br>
+								<div class="well bs-sidebar" id="sidebar" style="background-color:#fff">
+								   <ul class="nav nav-pills nav-stacked">
+										<li><a href='/'>DOWN</a></li>
+								  </ul>
+								</div>
+							<div class="col-sm-3">
+								<br>
+								
+								<br>
+								<div class="well bs-sidebar" id="sidebar" style="background-color:#fff">
+								   <ul class="nav nav-pills nav-stacked">
+										<li><a href='/'>RIGHT</a></li>
+								  </ul>
+								</div>										 
+					</div> 
+	</div>
+</body>
+
+</html>
