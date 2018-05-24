@@ -17,8 +17,9 @@ class LaneDetector(object):
         self.lane_object_mask = None
         self.complete_mask = None
 
-        self.lane_height = 370
-        self.lane_width = 300
+        # Lane Detect Modifieres (Two Green Lines)
+        self.lane_height = 330
+        self.lane_width = 500
         self.lane_screen_size_multiplier = 640
         self.lane_cross_over_color = [0,255,0]
         self.lane_direction_line_color = [255,100,0]
@@ -83,15 +84,17 @@ class LaneDetector(object):
         rx2 = self.lane_screen_size_multiplier - lx1
 
         #grabs thin line of pixels for lane detection
-        leftPixels =  cv2.cvtColor(blur_image[self.lane_height:self.lane_height + 1,lx1:rx1], cv2.COLOR_BGR2GRAY)
-        rightPixels =  cv2.cvtColor(blur_image[self.lane_height:self.lane_height + 1,lx2:rx2], cv2.COLOR_BGR2GRAY)
+        blue_image = cv2.cvtColor(self.blue_lane_mask, cv2.COLOR_GRAY2BGR)
+        yellow_image = cv2.cvtColor(self.yellow_lane_mask, cv2.COLOR_GRAY2BGR)
+        leftPixels =  cv2.cvtColor(blue_image[self.lane_height:self.lane_height + 1,lx1:rx1], cv2.COLOR_BGR2GRAY)
+        rightPixels =  cv2.cvtColor(yellow_image[self.lane_height:self.lane_height + 1,lx2:rx2], cv2.COLOR_BGR2GRAY)
         if(self.laneDetect(numbers = leftPixels, width = self.lane_width) > 0 or self.lv == None):
             self.lv = self.laneDetect(numbers = leftPixels, width = self.lane_width)
         if(self.laneDetect(numbers = rightPixels, width = self.lane_width) > 0 or self.rv == None):
             self.rv = self.laneDetect(numbers = rightPixels, width = self.lane_width)
         # Draw lines over the image for lane detection
         leftline = lx1 + self.lv
-        rightline = lx2 + self.rv
+        rightline = lx2 + self.rv# int(self.lane_width / 2)#+ self.rv
         midline = (int)((rightline + leftline) / 2)
         cv2.line(blur_image, (lx1,self.lane_height), (rx1, self.lane_height),
                  self.lane_cross_over_color, self.lane_line_thickness,
@@ -148,15 +151,13 @@ class BGRDetector(LaneDetector):
         LaneDetector.__init__(self)
 
 
-        self.BGR_Blue_Upper = np.array([255,240,190], dtype = "uint8")
-        self.BGR_Blue_Lower =  np.array([140,100,120], dtype = "uint8")
+        self.BGR_Blue_Upper = np.array([255,100,130], dtype = "uint8")
+        self.BGR_Blue_Lower =  np.array([100,0,0], dtype = "uint8")
 
-        self.BGR_Yellow_Upper = np.array([0,0,1], dtype = "uint8")
-        self.BGR_Object_Upper = np.array([0,0,1], dtype = "uint8")
+        self.BGR_Yellow_Upper = np.array([200,230,235], dtype = "uint8")
+        self.BGR_Yellow_Lower = np.array([100,150,150], dtype = "uint8")
 
-        # iy 200,200,100
-        #iB 170 100 40
-        self.BGR_Yellow_Lower = np.array([0,135,165], dtype = "uint8")
+        self.BGR_Object_Upper = np.array([0,0,0], dtype = "uint8")
         self.BGR_Object_Lower = np.array([0,0,4], dtype = "uint8")
 
         #no 193 193 193
@@ -214,10 +215,16 @@ class BGRDetector(LaneDetector):
         self.both_lane_mask = cv2.bitwise_or(self.blue_lane_mask, self.yellow_lane_mask)
         self.lane_object_mask = cv2.bitwise_or(self.both_lane_mask, self.object_mask)
 
-        self.complete_mask = cv2.bitwise_and(self.gray_image, self.lane_object_mask)
+        colouroutput = True
+        if(colouroutput):
+            self.lane_object_mask = cv2.cvtColor(self.lane_object_mask, cv2.COLOR_GRAY2BGR)
+            self.complete_mask = cv2.bitwise_and(self.work_frame, self.lane_object_mask)
 
-        #need 3 colour chanels for hstack
-        self.complete_mask = cv2.cvtColor(self.complete_mask, cv2.COLOR_GRAY2BGR)
+        else:
+            self.complete_mask = cv2.bitwise_and(self.gray_image, self.lane_object_mask)
+            self.complete_mask = cv2.cvtColor(self.complete_mask, cv2.COLOR_GRAY2BGR)
+
+
 
         return self.complete_mask
 
@@ -227,12 +234,17 @@ class HSVDetector(LaneDetector):
     def __init__(self):
         super(HSVDetector, self).__init__
         LaneDetector.__init__(self)
-        self.HSV_Blue_Upper =  np.array([255,185,80], dtype = "uint8")
-        self.HSV_Yellow_Upper = np.array([180,255,255], dtype = "uint8")
-        self.HSV_Object_Upper =  np.array([0,0,0], dtype = "uint8")
+        #0 orange, 10 orange, 20 orangeyellow, 30 yellow green, 40 yellow BGR_Green_Lower
+        #50 green, 60 blue?, 70 teal green, 80 teal blue, 90 blues, 100 deep blues,
+        #110 deeper blues #120 purlply #130 purply, #140 pink #150 pink # 160
+        #170 - 180 red
+        self.HSV_Blue_Upper =  np.array([150,255,255], dtype = "uint8")
+        self.HSV_Blue_Lower =  np.array([80,40,20], dtype = "uint8")
 
-        self.HSV_Blue_Lower =  np.array([100,40,4], dtype = "uint8")
-        self.HSV_Yellow_Lower =  np.array([100,200,200], dtype = "uint8")
+        self.HSV_Yellow_Upper = np.array([40,155,255], dtype = "uint8")
+        self.HSV_Yellow_Lower =  np.array([15,50,140], dtype = "uint8")
+
+        self.HSV_Object_Upper =  np.array([0,0,0], dtype = "uint8")
         self.HSV_Object_Lower =  np.array([0,0,0], dtype = "uint8")
 
 
@@ -256,9 +268,13 @@ class HSVDetector(LaneDetector):
             self.HSV_Object_Lower = np.array(HSV_Object_Lower, dtype = "uint8")
 
 
-    def get_lanes(self, base_frame, cropped_frame,
-                  HSV_Blue_Upper,HSV_Yellow_Upper,HSV_Object_Upper,
-                  HSV_Blue_Lower,HSV_Yellow_Lower,HSV_Object_Lower):
+    def get_lanes(self, base_frame, cropped_frame):
+                  # HSV_Blue_Upper = self.HSV_Blue_Upper,
+                  # HSV_Yellow_Upper = self.HSV_Yellow_Upper,
+                  # HSV_Object_Upper = self.HSV_Object_Upper,
+                  # HSV_Blue_Lower  = self.HSV_Blue_Lower,
+                  # HSV_Yellow_Lower = self.HSV_Yellow_Lower,
+                  # HSV_Object_Lower  = self.HSV_Object_Lower,):
 
         self.work_frame = base_frame.copy()
         self.cropped_work_frame = cropped_frame.copy()
@@ -271,10 +287,14 @@ class HSVDetector(LaneDetector):
         self.both_lane_mask = cv2.bitwise_or(self.blue_lane_mask, self.yellow_lane_mask)
         self.lane_object_mask = cv2.bitwise_or(self.both_lane_mask, self.object_mask)
 
-        self.complete_mask = cv2.bitwise_and(self.gray_image, self.lane_object_mask)
+        colouroutput = True
+        if(colouroutput):
+            self.lane_object_mask = cv2.cvtColor(self.lane_object_mask, cv2.COLOR_GRAY2BGR)
+            self.complete_mask = cv2.bitwise_and(self.work_frame, self.lane_object_mask)
 
-        #need 3 colour chanels for hstack
-        self.complete_mask = cv2.cvtColor(self.complete_mask, cv2.COLOR_GRAY2BGR)
+        else:
+            self.complete_mask = cv2.bitwise_and(self.gray_image, self.lane_object_mask)
+            self.complete_mask = cv2.cvtColor(self.complete_mask, cv2.COLOR_GRAY2BGR)
 
         return self.complete_mask
 
