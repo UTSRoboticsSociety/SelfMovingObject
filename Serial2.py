@@ -49,7 +49,7 @@ class Serial2(object):
                 print ("Port %s set to %d %s%s%s (%ds timeout)" % (self.port,self.baud,self.bytesize,self.parity,self.stopbits,self.timeout))
                 print ("sending '%s'"%message)
                 self.ser.write(bytes(message, encoding="ascii"))      # write a string
-                time.sleep(0.001)
+                time.sleep(0.015)
             except serial.SerialException:
                 print("failed to open %s"%self.port)
                 pass

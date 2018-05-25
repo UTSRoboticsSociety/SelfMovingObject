@@ -79,26 +79,24 @@ def main():
         # print("TEST")
         start_time = time.time()
 
-        # up = False
-        # down = False
-        # left = False
-        # right = False
-        # pressed = pygame.key.get_pressed()
-        # # for event in pygame.event.get():
-        #
-        # #print(event)
-        # if (pressed[pygame.K_w]):
-        #     up = True
-        #     print("W")
-        # if (pressed[pygame.K_s]): down = True
-        # if (pressed[pygame.K_a]): left = True
-        # if (pressed[pygame.K_d]): right = True
-        # pygame.event.pump()
+        up = False
+        down = False
+        left = False
+        right = False
+        pressed = pygame.key.get_pressed()
+        # for event in pygame.event.get():
+
+        #print(event)
+        if (pressed[pygame.K_w]): up = True
+        if (pressed[pygame.K_s]): down = True
+        if (pressed[pygame.K_a]): left = True
+        if (pressed[pygame.K_d]): right = True
+        pygame.event.pump()
 
         #while camera.get_frame() is None:  #Comment this block in
             #continue
         work_image = camera.read()
-
+        
         if work_image is None:  #Comment this block in
             continue
 
@@ -106,41 +104,40 @@ def main():
         #work_image = camera.get_resize_image(width_size = video_resize_width)
         #work_image = camera.get_frame()
 
-        # cropped_image = camera.crop_border_image(image = work_image)
-        #
-        # complete_mask = detector.get_lanes(base_frame = work_image,
-        #                                    cropped_frame = cropped_image)
-        # if complete_mask is not None:
-        #      direction_line_image, value = detector.draw_direction_lines(mask_image = complete_mask)
-        # #Send a value to the arduino fofr the servo angle
-        # value = str((int ((value - 320) / 2)) + 90)
-        # #value ="90"
-        # speed = 1410
-        #
-        # control = True
-        # if(control):
-        #     if(up): speed = 1400
-        #     elif(down): speed = 1600
-        #     else: speed = 1500
-        #     if(left): value = "50"
-        #     elif (right): value = "130"
-        #     else: value = "90"
-        speed = 1500
-        value = "90"
+        #cropped_image = camera.crop_border_image(image = work_image)
 
-        #message =  "{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[" + str(speed) + "," + value + "]}";
-        #seri.sendMessage(message,11)
-        cv2.imshow("Lane Detection", work_image)
-        cv2.waitKey(1)
+        complete_mask = detector.get_lanes(base_frame = work_image,
+                                           cropped_frame = work_image.copy())
+        if complete_mask is not None:
+             direction_line_image, value = detector.draw_direction_lines(mask_image = complete_mask)
+        #Send a value to the arduino fofr the servo angle
+        value = str((int ((value - 320) / 2)) + 90)
+        speed = 1410
+
+        control = True
+        if(control):
+            if(up): speed = 1380
+            elif(down): speed = 1600
+            else: speed = 1500
+            if(left): value = "45"
+            elif (right): value = "135"
+            else: value = "90"
+        #speed = 1500
+        #value = "90"
+
+        #message =  "{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[" + str(speed) + "," + value + "]}"
+        message =  "{\"data\":[" + str(speed) + "," + value + "]}"
+        seri.sendMessage(message,11)
+        #cv2.imshow("Lane Detection", work_image)
+        #cv2.waitKey(1)
         #
         #
-        # # Stack source image with lane image and display
-        # display = np.hstack((work_image, direction_line_image))   #######
-        # #display = cv2.resize(display, (1080,500))
-        # display = cv2.resize(display, (1500, 750))                  ########
-        # cv2.imshow("Lane Detection", display)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):                       ######
-        #     break                                                       ######
+        # Stack source image with lane image and display
+        display = np.hstack((work_image, direction_line_image))   #######
+        #display = cv2.resize(display, (1500, 750))                  ########
+        cv2.imshow("Lane Detection", display)
+        if cv2.waitKey(1) & 0xFF == ord('q'):                       ######
+            break                                                       ######
         print("FPS: ", 1.0 / (time.time() - start_time))
 
 ### PYTHON MAIN CALL
