@@ -8,15 +8,19 @@ class LaneDetector(object):
         self.cropped_work_frame = None
 
         self.canny_edge_image = None
+        self.colour_image = None
 
         self.blue_lane_mask = None
         self.yellow_lane_mask = None
         self.object_mask = None
 
+        self.blue_line_mask = None
+        self.yellow_line_mask = None
+
         self.both_lane_mask = None
         self.lane_object_mask = None
         self.complete_mask = None
-
+        self.overlay_mask = None
         # Lane Detect Modifieres (Two Green Lines)
         self.lane_height = 330
         self.lane_width = 300
@@ -74,10 +78,10 @@ class LaneDetector(object):
             value = (int) (value / count)
         return value
 
-    def draw_direction_lines(self, mask_image):
-        self.lane_screen_size_multiplier = mask_image.shape[1]
-        blur_image = self.get_blur_image(mask_image) #why?
-
+    def draw_direction_lines(self):
+        self.lane_screen_size_multiplier = self.complete_mask.shape[1]
+        #blur_image = self.get_blur_image(self.complete_mask) #why?
+        self.overlay_mask = self.complete_mask
         lx1 = 0 # ~ lx1 is is left x coord of the first line
         rx1 = lx1 + self.lane_width
         lx2 = self.lane_screen_size_multiplier - rx1
@@ -88,8 +92,8 @@ class LaneDetector(object):
         #yellow_image = cv2.cvtColor(self.yellow_lane_mask, cv2.COLOR_GRAY2BGR)
         #leftPixels =  cv2.cvtColor(blue_image[self.lane_height:self.lane_height + 1,lx1:rx1], cv2.COLOR_BGR2GRAY)
         #rightPixels =  cv2.cvtColor(yellow_image[self.lane_height:self.lane_height + 1,lx2:rx2], cv2.COLOR_BGR2GRAY)
-        leftPixels =  cv2.cvtColor(self.lane_object_mask[self.lane_height:self.lane_height + 1,lx1:rx1], cv2.COLOR_BGR2GRAY)
-        rightPixels =  cv2.cvtColor(self.lane_object_mask[self.lane_height:self.lane_height + 1,lx2:rx2], cv2.COLOR_BGR2GRAY)
+        leftPixels =  self.blue_line_mask[self.lane_height:self.lane_height + 1,lx1:rx1]
+        rightPixels =  self.yellow_line_mask[self.lane_height:self.lane_height + 1,lx2:rx2]
         if(self.laneDetect(numbers = leftPixels, width = self.lane_width) > 0 or self.lv == None):
             self.lv = self.laneDetect(numbers = leftPixels, width = self.lane_width)
         if(self.laneDetect(numbers = rightPixels, width = self.lane_width) > 0 or self.rv == None):
@@ -98,23 +102,23 @@ class LaneDetector(object):
         leftline = lx1 + self.lv
         rightline = lx2 + self.rv# int(self.lane_width / 2)#+ self.rv
         midline = (int)((rightline + leftline) / 2)
-        cv2.line(blur_image, (lx1,self.lane_height), (rx1, self.lane_height),
+        cv2.line(self.overlay_mask, (lx1,self.lane_height), (rx1, self.lane_height),
                  self.lane_cross_over_color, self.lane_line_thickness,
                  self.lane_line_type, self.lane_line_shift)
 
-        cv2.line(blur_image, (lx2,self.lane_height), (rx2, self.lane_height),
+        cv2.line(self.overlay_mask, (lx2,self.lane_height), (rx2, self.lane_height),
                  self.lane_cross_over_color, self.lane_line_thickness,
                  self.lane_line_type, self.lane_line_shift)
 
-        cv2.line(blur_image, ((leftline), self.lane_height - 25),
+        cv2.line(self.overlay_mask, ((leftline), self.lane_height - 25),
                ((leftline), self.lane_height + 25), self.lane_direction_line_color,
                  self.lane_line_thickness, self.lane_line_type, self.lane_line_shift)
 
-        cv2.line(blur_image, ((rightline), self.lane_height - 25),
+        cv2.line(self.overlay_mask , ((rightline), self.lane_height - 25),
                ((rightline), self.lane_height + 25), self.lane_direction_line_color,
                  self.lane_line_thickness, self.lane_line_type, self.lane_line_shift)
 
-        cv2.line(blur_image, ((midline), self.lane_height - 50),
+        cv2.line(self.overlay_mask , ((midline), self.lane_height - 50),
                ((midline), self.lane_height + 50), self.lane_direction_line_color,
                  self.lane_line_thickness, self.lane_line_type, self.lane_line_shift)
 
@@ -126,17 +130,14 @@ class LaneDetector(object):
         if(midline < self.travel_slight_left_right_limit and midline > self.travel_slight_left_left_limit): output = "Slight Left"
         if(midline < self.travel_left__limit): output = "Left"
 
-        self.blur_image = blur_image.copy()
-
-        return self.blur_image, midline
-
+        return self.overlay_mask, midline , self.canny_edge_image, self.colour_image
 
     def edge_detection(self, mask_image):
         # Basic Edge Detection (not implemented)
-        blur_image = cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY)#self.blur_image(mask_image)
+        #blur_image = cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY)#self.blur_image(mask_image)
         self.edge_low_threshold = 10
         self.edge_high_threshold = 50
-        self.canny_edge_image = cv2.Canny(blur_image, self.edge_low_threshold, self.edge_high_threshold)
+        self.canny_edge_image = cv2.Canny(cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY), self.edge_low_threshold, self.edge_high_threshold)
         #self.canny_edge_image = cv2.cvtColor(self.canny_edge_image, cv2.COLOR_GRAY2BGR)
         #return self.canny_edge_image
 
@@ -155,6 +156,8 @@ class HSVDetector(LaneDetector):
         #170 - 180 red
         self.HSV_Blue_Upper =  np.array([150,255,140], dtype = "uint8")
         self.HSV_Blue_Lower =  np.array([80,20,20], dtype = "uint8")
+    #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
+
 
         self.HSV_Yellow_Upper = np.array([40,255,255], dtype = "uint8")
         self.HSV_Yellow_Lower =  np.array([15,0,50], dtype = "uint8")
@@ -208,12 +211,19 @@ class HSVDetector(LaneDetector):
         self.object_mask = self.mask_colors(self.work_frame, self.HSV_Object_Upper, self.HSV_Object_Lower)
 
         self.lane_object_mask = cv2.bitwise_or(self.blue_lane_mask, self.yellow_lane_mask, self.object_mask)
-        #self.lane_object_mask = cv2.bitwise_or(self.both_lane_mask, self.object_mask)
+        self.colour_image = cv2.cvtColor(self.lane_object_mask, cv2.COLOR_GRAY2BGR)
+        self.colour_image = cv2.bitwise_and(self.work_frame, self.colour_image)
+
         self.lane_object_mask = cv2.bitwise_and(self.object_mask, self.canny_edge_image )
+
+        self.blue_line_mask = cv2.bitwise_and(self.blue_lane_mask, self.canny_edge_image )
+        self.yellow_line_mask = cv2.bitwise_and(self.yellow_lane_mask, self.canny_edge_image )
+
         colouroutput = True
+
         if(colouroutput):
             self.lane_object_mask = cv2.cvtColor(self.lane_object_mask, cv2.COLOR_GRAY2BGR)
-            self.complete_mask = cv2.bitwise_and(self.work_frame, self.lane_object_mask)
+            self.complete_mask = cv2.bitwise_and(self.work_frame, self.lane_object_mask) #Check if AND distorts colour
 
         else:
             self.complete_mask = cv2.bitwise_and(self.gray_image, self.lane_object_mask)
