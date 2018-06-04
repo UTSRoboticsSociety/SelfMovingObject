@@ -13,6 +13,15 @@ from imutils.video import WebcamVideoStream
 def main():
 
     pygame.init()
+    pygame.joystick.init()
+    joystick_count = pygame.joystick.get_count()
+    axis0 = 0  #Left / Right on left joystick
+    axis1 = 0  #Up / Dpwn on left joystick
+    axis2 = 0  #R2 / L2 L2 is positive, R2 is negative.
+    axis5 = 0
+    buttonA = 0 #A
+    buttonY = 0 #Y
+
     screen = pygame.display.set_mode((300,300))
     pygame.display.set_caption('wasd car control')
     camera = None
@@ -74,10 +83,11 @@ def main():
 
     print("Initializing..")
     control = True
+
     while True:
 
         start_time = time.time()
-
+        joystick_count = pygame.joystick.get_count()
         up = False
         down = False
         left = False
@@ -91,6 +101,17 @@ def main():
         if (pressed[pygame.K_p]): control = False
         if (pressed[pygame.K_c]): control = True
 
+        for i in range(joystick_count):
+            joystick = pygame.joystick.Joystick(i)
+            joystick.init()
+            axis0 = joystick.get_axis(0)  #Left / Right on left joystick
+            axis1 = joystick.get_axis(1)  #Up / Dpwn on left joystick
+            axis2 = joystick.get_axis(2)  #l2 -1 -> 1 ######R2 / L2 L2 is positive, R2 is negative.
+            axis5 = joystick.get_axis(5)  #R2  -1 -> 1 #####/ L2 L2 is positive, R2 is negative.
+
+            buttonA = joystick.get_button(0) #A Button
+            buttonY = joystick.get_button(0) #Y Button
+
         pygame.event.pump()
 
         work_image = camera.read()
@@ -102,10 +123,10 @@ def main():
 
         complete_mask = detector.get_lanes(base_frame = work_image,
                                            cropped_frame = work_image.copy())
-        direction_line_image, value, canny_edge_image, colour_image = detector.draw_direction_lines()
+        direction_line_image, value, canny_edge_image, colour_image = detector.draw_direction_lines(330)
         canny_edge_image = cv2.cvtColor(canny_edge_image, cv2.COLOR_GRAY2BGR)
         value = str((int ((value - 320) / 2)) + 90)
-        speed = 1410
+        speed = 1390 + int(abs(int(value) - 90) / 2)
 
         if(control):
             if(up): speed = 1380
@@ -114,13 +135,20 @@ def main():
             if(left): value = "45"
             elif (right): value = "135"
             else: value = "90"
+            if(joystick_count > 0):
+                if(abs(axis0) > 0.1):
+                    value = str(90 + 40 * axis0)
+                if(abs(axis5 + 1) > 0.1):
+                    speed = 1430 - 20 * (axis5 + 1)
+                elif(abs(axis2 + 1) > 0.1):
+                    speed = 1570 + 20 * (axis2 + 1)
 
         message =  "{\"data\":[" + str(speed) + "," + value + "]}"
         seri.sendMessage(message,11)
-        display = work_image
-        # displaytop = np.hstack((work_image, direction_line_image))
-        # displaybot = np.hstack((canny_edge_image, colour_image))
-        # display = np.vstack((displaytop,displaybot))
+        #display = work_image
+        displaytop = np.hstack((work_image, direction_line_image))
+        displaybot = np.hstack((canny_edge_image, colour_image))
+        display = np.vstack((displaytop,displaybot))
 
         #display = cv2.resize(display, (1500, 750))
 
