@@ -1,3 +1,6 @@
+import cv2
+import numpy as np
+
 
 class ColorPicker(object):
     def __init__(self):
@@ -17,7 +20,6 @@ class ColorPicker(object):
         self.message_thickness = 2
         self.message_font_scale = 2
 
-
     def click_and_crop(self, event, x, y, flags, param):
 
         # if the left mouse button was clicked, record the starting
@@ -35,7 +37,9 @@ class ColorPicker(object):
             self.cropping = False
 
             # draw a rectangle around the region of interest
-            cv2.rectangle(self.work_image, self.refPt[0], self.refPt[1], (0, 255, 0), 2)
+            cv2.rectangle(self.work_image,
+                          self.refPt[0],
+                          self.refPt[1], (0, 255, 0), 2)
             cv2.imshow("image", self.work_image)
 
 
@@ -64,8 +68,9 @@ class BGRPicker(ColorPicker):
             self.work_image = image
 
         cv2.putText(self.work_image, message,
-                   (self.message_x_cord, self.message_y_cord),
-                    self.font, self.message_font_scale, self.message_color, self.message_thickness)
+                    (self.message_x_cord, self.message_y_cord),
+                    self.font, self.message_font_scale,
+                    self.message_color, self.message_thickness)
         clone = self.work_image.copy()
         cv2.namedWindow("image")
         cv2.setMouseCallback("image", self.click_and_crop)
@@ -82,10 +87,12 @@ class BGRPicker(ColorPicker):
 
             # if the 'c' key is pressed, break from the loop
             elif key == ord("c"):
-                # if there are two reference points, then crop the region of interest
+                # if there are two reference points,
+                # then crop the region of interest
                 # from the image and display it
                 if len(self.refPt) == 2:
-                    roi = clone[self.refPt[0][1]:self.refPt[1][1], self.refPt[0][0]:self.refPt[1][0]]
+                    roi = clone[self.refPt[0][1]:self.refPt[1][1],
+                                self.refPt[0][0]:self.refPt[1][0]]
 
                     average_color_per_row = np.average(roi, axis=0)
                     average_color = np.average(average_color_per_row, axis=0)
@@ -93,11 +100,13 @@ class BGRPicker(ColorPicker):
                     # debug print(average_color)
                     cv2.imshow("ROI", roi)
 
-                    self.BGR_Upper = np.array([average_color[0] + self.BGR_Blue_Upper,
+                    self.BGR_Upper = np.array(
+                                    [average_color[0] + self.BGR_Blue_Upper,
                                      average_color[1] + self.BGR_Red_Upper,
                                      average_color[2] + self.BGR_Green_Upper])
 
-                    self.BGR_Lower = np.array([average_color[0] - self.BGR_Blue_Lower,
+                    self.BGR_Lower = np.array(
+                                    [average_color[0] - self.BGR_Blue_Lower,
                                      average_color[1] - self.BGR_Green_Lower,
                                      average_color[2] - self.BGR_Red_Lower])
 
@@ -115,8 +124,8 @@ class BGRPicker(ColorPicker):
 
 class HSVPicker(ColorPicker):
     def __init__(self):
-        self.HSV_Upper = [255,185,80]
-        self.HSV_Lower = [100,40,4]
+        self.HSV_Upper = [255, 185, 80]
+        self.HSV_Lower = [100, 40, 4]
 
         self.HSV_Hue_Upper = 15
         self.HSV_Hue_Lower = 15
@@ -142,7 +151,9 @@ class HSVPicker(ColorPicker):
         if image is not None:
             self.work_image = image
 
-        cv2.putText(self.work_image, message, (100, 100), self.font, 2, (255, 255, 255), 2)
+        cv2.putText(self.work_image, message, (100, 100),
+                    self.font, 2, (255, 255, 255), 2)
+
         clone = self.work_image.copy()
         cv2.namedWindow("image")
         cv2.setMouseCallback("image", self.click_and_crop)
@@ -159,10 +170,12 @@ class HSVPicker(ColorPicker):
 
             # if the 'c' key is pressed, break from the loop
             elif key == ord("c"):
-                # if there are two reference points, then crop the region of interest
+                # if there are two reference points,
+                # then crop the region of interest
                 # from the image and display it
                 if len(self.refPt) == 2:
-                    roi = clone[self.refPt[0][1]:self.refPt[1][1], self.refPt[0][0]:self.refPt[1][0]]
+                    roi = clone[self.refPt[0][1]:self.refPt[1][1],
+                                self.refPt[0][0]:self.refPt[1][0]]
 
                     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
                     cv2.imshow("HSV", hsv)
@@ -172,13 +185,15 @@ class HSVPicker(ColorPicker):
                     # debug print(average_color)
                     cv2.imshow("ROI", roi)
 
-                    self.HSV_Upper = np.array([average_color[0] + self.HSV_Hue_Upper,
-                                     average_color[1] + self.HSV_Saturation_Upper,
-                                     average_color[2] + self.HSV_Lightness_Value_Upper])
+                    self.HSV_Upper = np.array(
+                        [average_color[0] + self.HSV_Hue_Upper,
+                         average_color[1] + self.HSV_Saturation_Upper,
+                         average_color[2] + self.HSV_Lightness_Value_Upper])
 
-                    self.HSV_Lower = np.array([average_color[0] - self.HSV_Hue_Lower,
-                                     average_color[1] - self.HSV_Saturation_Lower,
-                                     average_color[2] - self.HSV_Lightness_Value_Lower])
+                    self.HSV_Lower = np.array(
+                        [average_color[0] - self.HSV_Hue_Lower,
+                         average_color[1] - self.HSV_Saturation_Lower,
+                         average_color[2] - self.HSV_Lightness_Value_Lower])
 
                     # debug print("HSV UPPER is " + str(hsvUpper))
                     # debug print("HSV Lower is " + str(hsvLower))
@@ -195,14 +210,12 @@ class HSVPicker(ColorPicker):
 class color_picker_manager(object):
     def __init__(self, color_type):
         self.color_type = color_type
-        self.video_name = video_name
-
 
     def get_detector(self):
-        if self.color_type == "BGR_Picker":
+        if self.color_type == "RGBDetector":
             return BGRPicker()
 
-        if self.color_type == "HSV_Picker":
+        if self.color_type == "HSVDetector":
             return HSVPicker()
 
         else:
