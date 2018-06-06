@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 # import imutils
@@ -116,8 +115,8 @@ def main():
         if work_image is None:
             continue
 
-        # complete_mask = detector.get_lanes(base_frame=work_image,
-        # cropped_frame=work_image.copy())
+        detector.get_lanes(base_frame=work_image,
+                           cropped_frame=work_image.copy())
 
         (direction_line_image,
          value,

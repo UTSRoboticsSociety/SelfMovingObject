@@ -144,13 +144,13 @@ class LaneDetector(object):
         if(self.laneDetect(pixel_threshold=leftPixels,
                            width=self.lane_width) > 0
            or self.lv is None):
-            self.lv = self.laneDetect(numbers=leftPixels,
+            self.lv = self.laneDetect(pixel_threshold=leftPixels,
                                       width=self.lane_width)
 
         if(self.laneDetect(pixel_threshold=rightPixels,
                            width=self.lane_width) > 0
            or self.rv is None):
-            self.rv = self.laneDetect(numbers=rightPixels,
+            self.rv = self.laneDetect(pixel_threshold=rightPixels,
                                       width=self.lane_width)
 
         # objectPixels =
