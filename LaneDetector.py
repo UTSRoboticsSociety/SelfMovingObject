@@ -14,7 +14,7 @@ class LaneDetector(object):
         self.blue_lane_mask = None
         self.yellow_lane_mask = None
         self.object_mask = None
-        self.test_mask = None
+        self.obstacle_mask = None
         self.blue_line_mask = None
         self.yellow_line_mask = None
 
@@ -107,6 +107,31 @@ class LaneDetector(object):
         print(value, rise)
         return value, rise
 
+    def obstacleDetection(self):
+        obstacle = self.obstacle_mask[100:380, 0:640]
+        obstacle = cv2.GaussianBlur(obstacle, (5, 5), 0)
+        obstacle = cv2.threshold(obstacle, 60, 255, cv2.THRESH_BINARY)[1]
+        cnts = cv2.findContours(obstacle, cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+        count = 0
+        tX = 0
+        tY = 0
+        for c in cnts:
+            # compute the center of the contour
+            M = cv2.moments(c)
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            tX = tX + cX
+            tY = tY + cY
+            count = count + 1
+            # draw the contour and center of the shape on the image
+        if(count > 0):
+            tX = int(tX / count)
+            tY = int(tY / count)
+
+        return (tX, tY)
+
     def draw_direction_lines(self, h1=None, h2=None, h3=None):
 
         self.lane_height = h1
@@ -162,27 +187,7 @@ class LaneDetector(object):
         # if(self.object_center_x > 0):
         #     print("OBJECTDETECTED")
 
-        test = self.test_mask[100:380, 0:640]
-        test = cv2.GaussianBlur(test, (5, 5), 0)
-        test = cv2.threshold(test, 60, 255, cv2.THRESH_BINARY)[1]
-        cnts = cv2.findContours(test, cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-        count = 0
-        tX = 0
-        tY = 0
-        for c in cnts:
-            # compute the center of the contour
-            M = cv2.moments(c)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            tX = tX + cX
-            tY = tY + cY
-            count = count + 1
-            # draw the contour and center of the shape on the image
-        if(count > 0):
-            tX = int(tX / count)
-            tY = int(tY / count)
+        (tX, tY) = self.obstacleDetection()
 
         # Draw lines over the image for lane detection
         leftline = lx1 + self.lv
@@ -327,7 +332,7 @@ class HSVDetector(LaneDetector):
                                             self.HSV_Object_Upper,
                                             self.HSV_Object_Lower)
 
-        self.test_mask = self.object_mask.copy()
+        self.obstacle_mask = self.object_mask.copy()
         self.lane_object_mask = cv2.bitwise_or(self.blue_lane_mask,
                                                self.yellow_lane_mask,
                                                self.object_mask)

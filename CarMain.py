@@ -11,23 +11,9 @@ import interface
 from imutils.video import WebcamVideoStream
 
 
-def main():
-    axis0 = 0  # Left / Right on left joystick
-    # axis1 = 0  # Up / Dpwn on left joystick
-    axis2 = 0  # R2 / L2 L2 is positive, R2 is negative.
-    axis5 = 0
-    # buttonA = 0 # A Button
-    # buttonY = 0 # Y Button
-    main_interface = None
-    camera = None
-    detector = None
-    color_picker = None
-    enable_Color_Picker = False
-    work_image = None
-    # complete_mask_image = None
-    direction_line_image = None
+def initialize():
     detector_type = "HSVDetector"
-    # video_resize_width = 1080
+    enable_Color_Picker = False
     serial_baud_rate = 115200
     serial_port = "/dev/ttyUSB0"
     serial_byte_size = 8
@@ -38,31 +24,22 @@ def main():
     serial_write_timeout = 2
     serial_dstdtr = False
     serial_intercharttimeout = None
-
-    # Detector Variables
-    detector_lane_height = 330
-
-    blue_upper = []
-    yellow_upper = []
-    object_upper = []
-
-    blue_lower = []
-    yellow_lower = []
-    object_lower = []
-
-    # videonumber = 1
-    # url = ('Videos/video' + str(videonumber) + '.mp4')
-
-    # camera = Camera.Camera(video_source = 0)
+    serial_usingSerial = False
     camera = WebcamVideoStream(src=0).start()
+    # camera = WebcamVideoStream(src="C:\\Users\\Lordbordem.lordbordem-PC\\Desktop\\Robosoc\\SelfMovingObject\\Videos\\video2.mp4").start()
 
-    seri = Serial2.Serial2(serial_port,
-                           serial_baud_rate, serial_byte_size,
-                           serial.PARITY_NONE,
-                           serial_stop_bits, serial_time_out,
-                           serial_xxonxoff, serial_rtscts,
-                           serial_write_timeout,
-                           serial_dstdtr, serial_intercharttimeout)
+    seri = Serial2.Serial2(port=serial_port,
+                           baud=serial_baud_rate,
+                           bytesize=serial_byte_size,
+                           parity=serial.PARITY_NONE,
+                           stopbits=serial_stop_bits,
+                           timeout=serial_time_out,
+                           xonxoff=serial_xxonxoff,
+                           rtscts=serial_rtscts,
+                           writetimeout=serial_write_timeout,
+                           dstdtr=serial_dstdtr,
+                           intercharttimeout=serial_intercharttimeout,
+                           usingSerial=serial_usingSerial)
 
     # camera.open_video()
 
@@ -79,16 +56,31 @@ def main():
 
     detector = detector_manager.get_detector()
 
+    set_colour_picker(enable_Color_Picker=enable_Color_Picker,
+                      detector=detector,
+                      detector_type=detector_type)
+
+    return (camera, seri, main_interface, joystick_count, work_image, detector)
+
+
+def set_colour_picker(enable_Color_Picker, detector, detector_type):
+    blue_upper = []
+    yellow_upper = []
+    object_upper = []
+
+    blue_lower = []
+    yellow_lower = []
+    object_lower = []
     if enable_Color_Picker:
         color_manager = ColorPicker.color_picker_manager(
-                                    color_type=detector_type)
+                                        color_type=detector_type)
 
         color_picker = color_manager.get_detector()
 
         (blue_upper,
          blue_lower) = color_picker.select_color(
-                                    image=None,
-                                    message="pick blue lane")
+                                        image=None,
+                                        message="pick blue lane")
         (yellow_upper,
          yellow_lower) = color_picker.select_color(image=None,
                                                    message="pick yellow lane")
@@ -99,75 +91,156 @@ def main():
         detector.set_colors(blue_upper, yellow_upper, object_upper,
                             blue_lower, yellow_lower, object_lower)
 
+
+def translate_key_controls(control, up, down, left, right, speed, direction):
+    if(control):
+        if(up):
+            speed = 1380
+        elif(down):
+            speed = 1600
+        else:
+            speed = 1500
+        if(left):
+            direction = "45"
+        elif (right):
+            direction = "135"
+        else:
+            direction = "90"
+
+    return (speed, direction)
+
+
+def translate_stick_controls(axis0, axis1, axis2,
+                             axis3, axis4, axis5, speed, direction):
+
+    if(abs(axis0) > 0.1):
+        direction = str(90 + 40 * axis0)
+    if(abs(axis5 + 1) > 0.1):
+        speed = 1430 - 20 * (axis5 + 1)
+    elif(abs(axis2 + 1) > 0.1):
+        speed = 1570 + 20 * (axis2 + 1)
+
+    return (speed, direction)
+
+
+def user_control_loop(window, joystick_enable, speed, direction, control):
+    axis0 = 0  # Left / Right on left joystick
+    # axis1 = 0  # Up / Dpwn on left joystick
+    axis2 = 0  # R2 / L2 L2 is positive, R2 is negative.
+    axis5 = 0
+    up = False
+    down = False
+    left = False
+    right = False
+
+    joystick_count = window.get_joystick_count()
+
+    up, down, left, right, control = window.get_key_input()
+
+    if control is True:
+        if joystick_count is not 0 and joystick_enable is True:
+            (axis0,
+             axis1,
+             axis2,
+             axis3,
+             axis4,
+             axis5) = window.get_joystick_input(joystick_num=0)
+            (speed, direction) = translate_stick_controls(axis0=axis0,
+                                                          axis1=axis1,
+                                                          axis2=axis2,
+                                                          axis3=axis3,
+                                                          axis4=axis4,
+                                                          axis5=axis5,
+                                                          speed=speed,
+                                                          direction=direction)
+
+        elif joystick_count is 0 or joystick_enable is False:
+            (speed,
+             direction) = translate_key_controls(control=control,
+                                                 up=up,
+                                                 down=down,
+                                                 left=left,
+                                                 right=right,
+                                                 speed=speed,
+                                                 direction=direction)
+
+    return (speed, direction, control)
+
+
+def main():
+    joystick_enable = False
+    control = False
+    # buttonA = 0 # A Button
+    # buttonY = 0 # Y Button
+    main_interface = None
+    camera = None
+    detector = None
+    work_image = None
+    # complete_mask_image = None
+    direction_line_image = None
+    # video_resize_width = 1080
+    blank_image_count = 0
+
+    # Detector Variables
+    detector_lane_height = 330
+
+    # videonumber = 1
+    # url = ('Videos/video' + str(videonumber) + '.mp4')
+
+    # camera = Camera.Camera(video_source = 0)
+
+    (camera,
+     seri,
+     main_interface,
+     joystick_count,
+     work_image,
+     detector) = initialize()
+
     print("Initializing..")
-    control = True
 
     while True:
 
         start_time = time.time()
-        up = False
-        down = False
-        left = False
-        right = False
 
         work_image = camera.read()
 
         if work_image is None:
+            blank_image_count += 1
+            if blank_image_count is 60:
+                break
             continue
 
         detector.get_lanes(base_frame=work_image,
                            cropped_frame=work_image.copy())
 
         (direction_line_image,
-         value,
+         direction,
          canny_edge_image,
          colour_image) = detector.draw_direction_lines(h1=detector_lane_height)
 
         canny_edge_image = cv2.cvtColor(canny_edge_image, cv2.COLOR_GRAY2BGR)
-        value = str((int((value - 320) / 2)) + 90)
-        speed = 1390 + int(abs(int(value) - 90) / 2)
+        direction = str((int((direction - 320) / 2)) + 90)
+        speed = 1390 + int(abs(int(direction) - 90) / 2)
 
-        joystick_count = main_interface.get_joystick_count()
+        (speed,
+         direction,
+         control) = user_control_loop(window=main_interface,
+                                      joystick_enable=joystick_enable,
+                                      speed=speed,
+                                      direction=direction,
+                                      control=control)
 
-        up, down, left, right, control = main_interface.get_key_input()
-
-        if joystick_count is not 0:
-            (axis0,
-             axis1,
-             axis2,
-             axis3,
-             axis4,
-             axis5) = main_interface.get_joystick_input(joystick_num=0)
-
-            if(abs(axis0) > 0.1):
-                value = str(90 + 40 * axis0)
-            if(abs(axis5 + 1) > 0.1):
-                speed = 1430 - 20 * (axis5 + 1)
-            elif(abs(axis2 + 1) > 0.1):
-                speed = 1570 + 20 * (axis2 + 1)
-
-        if(control):
-            if(up):
-                speed = 1380
-            elif(down):
-                speed = 1600
-            else:
-                speed = 1500
-            if(left):
-                value = "45"
-            elif (right):
-                value = "135"
-            else:
-                value = "90"
-
-        message = "{\"data\":["+str(speed)+","+value + "]}"
-        seri.sendMessage(message, 11)
+        message = "{\"data\":["+str(speed)+","+direction + "]}"
+        print(len(message))
+        seri.sendMessage(message=message, length=11)
         # display = work_image
         displaytop = np.hstack((work_image, direction_line_image))
         displaybot = np.hstack((canny_edge_image, colour_image))
         display = np.vstack((displaytop, displaybot))
 
         # display = cv2.resize(display, (1500, 750))
+
+        main_interface.update_frame(display)
 
         cv2.imshow("Lane Detection", display)
         if cv2.waitKey(1) & 0xFF == ord('q'):

@@ -1,4 +1,12 @@
 import pygame
+import cv2
+import numpy as np
+import imutils
+
+# Links for Future Use####
+# http://www.thorpy.org/tutorials/include.html
+# https://www.pygame.org/docs/
+# https://www.reddit.com/r/pygame/comments/89ygm7/pygame_awesome_libraries/
 
 
 class interface(object):
@@ -22,14 +30,26 @@ class interface(object):
         self.pressed = None
 
         self.screen = None
-        self.screen_width = 300
-        self.screen_height = 300
+        self.frame = None
+        self.screen_width = 1280
+        self.screen_height = 720
+        self.menu_size = 280
+        self.frame_width = self.screen_width - self.menu_size
         self.screen_caption = "wasd car control"
 
         pygame.init()
         pygame.joystick.init()
 
         self.joystick_count = pygame.joystick.get_count()
+
+    def update_frame(self, cv_image):
+        cv_image = imutils.resize(cv_image, width=min(self.frame_width,
+                                                      cv_image.shape[1]))
+        self.frame = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+        self.frame = np.rot90(self.frame)
+        self.frame = pygame.surfarray.make_surface(self.frame)
+        self.screen.blit(self.frame, (0, 0))
+        pygame.display.update()
 
     def process_events(self):
         pygame.event.pump()
