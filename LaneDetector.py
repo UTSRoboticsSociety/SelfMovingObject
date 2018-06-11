@@ -23,6 +23,24 @@ class LaneDetector(object):
         self.complete_mask = None
         self.overlay_mask = None
 
+        self.HSV_Blue_Upper = None
+        self.HSV_Yellow_Upper = None
+        self.HSV_Object_Upper = None
+        self.HSV_Blue_Lower = None
+        self.HSV_Yellow_Lower = None
+        self.HSV_Object_Lower = None
+        self.HSV_Finish_Upper = None
+        self.HSV_Finish_Lower = None
+
+        self.BGR_Blue_Upper = None
+        self.BGR_Yellow_Upper = None
+        self.BGR_Object_Upper = None
+        self.BGR_Blue_Lower = None
+        self.BGR_Yellow_Lower = None
+        self.BGR_Object_Lower = None
+        self.BGR_Finish_Upper = None
+        self.BGR_Finish_Lower = None
+
         self.object_center_x = 0
         self.object_center_y = 0
 
@@ -257,12 +275,29 @@ class LaneDetector(object):
                                             self.kernel_size), 0)
         return self.blur_image
 
+    def return_current_colors(self):
+        raise NotImplementedError
+
+    def load_default_color_values(self):
+        raise NotImplementedError
+
+    def finish_line(self):
+        raise NotImplementedError
+
 
 class HSVDetector(LaneDetector):
     def __init__(self):
         super(HSVDetector, self).__init__
         LaneDetector.__init__(self)
         self.load_default_color_values()
+
+    def return_current_colors(self):
+        return (self.HSV_Blue_Upper,
+                self.HSV_Yellow_Upper,
+                self.HSV_Object_Upper,
+                self.HSV_Blue_Lower,
+                self.HSV_Yellow_Lower,
+                self.HSV_Object_Lower)
 
     def set_colors(self,
                    HSV_Blue_Upper, HSV_Yellow_Upper, HSV_Object_Upper,
@@ -395,6 +430,14 @@ class BGRDetector(LaneDetector):
         super(BGRDetector, self).__init__
         LaneDetector.__init__(self)
         self.load_default_color_values()
+
+    def return_current_colors(self):
+        return (self.BGR_Blue_Upper,
+                self.BGR_Yellow_Upper,
+                self.BGR_Object_Upper,
+                self.BGR_Blue_Lower,
+                self.BGR_Yellow_Lower,
+                self.BGR_Object_Lower)
 
     def load_default_color_values(self):
         self.BGR_Blue_Upper = np.array([255, 100, 130], dtype="uint8")
