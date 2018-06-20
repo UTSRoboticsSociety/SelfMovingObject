@@ -297,11 +297,14 @@ class HSVDetector(LaneDetector):
                 self.HSV_Object_Upper,
                 self.HSV_Blue_Lower,
                 self.HSV_Yellow_Lower,
-                self.HSV_Object_Lower)
+                self.HSV_Object_Lower,
+                self.HSV_Finish_Upper,
+                self.HSV_Finish_Lower)
 
     def set_colors(self,
                    HSV_Blue_Upper, HSV_Yellow_Upper, HSV_Object_Upper,
-                   HSV_Blue_Lower, HSV_Yellow_Lower, HSV_Object_Lower):
+                   HSV_Blue_Lower, HSV_Yellow_Lower, HSV_Object_Lower,
+                   HSV_Finish_Upper, HSV_Finish_Lower):
 
         if HSV_Blue_Upper is not None:
             self.HSV_Blue_Upper = np.array(HSV_Blue_Upper, dtype="uint8")
@@ -316,6 +319,11 @@ class HSVDetector(LaneDetector):
             self.HSV_Yellow_Lower = np.array(HSV_Yellow_Lower, dtype="uint8")
         if HSV_Object_Lower is not None:
             self.HSV_Object_Lower = np.array(HSV_Object_Lower, dtype="uint8")
+
+        if HSV_Finish_Upper is not None:
+            self.HSV_Finish_Upper = np.array(HSV_Finish_Upper, dtype="uint8")
+        if HSV_Finish_Lower is not None:
+            self.HSV_Finish_Lower = np.array(HSV_Finish_Lower, dtype="uint8")
 
     def load_default_color_values(self):
         # 0 orange, 10 orange, 20 orangeyellow,
@@ -338,6 +346,9 @@ class HSVDetector(LaneDetector):
 
         self.HSV_Object_Upper = np.array([180, 255, 255], dtype="uint8")
         self.HSV_Object_Lower = np.array([160, 100, 20], dtype="uint8")
+
+        self.HSV_Finish_Upper = np.array([180, 255, 255], dtype="uint8")
+        self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
 
     def get_lanes(self, base_frame, cropped_frame):
         # HSV_Blue_Upper = self.HSV_Blue_Upper,

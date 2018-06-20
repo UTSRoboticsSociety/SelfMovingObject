@@ -29,43 +29,44 @@ class interface(object):
         self.axis4 = None
         self.axis5 = None
 
-        self.Blue_Hue_Slider = None
-        self.Blue_Saturation_Slider = None
-        self.Blue_Value_Slider = None
+        self.Upper_Hue_Slider = None
+        self.Upper_Saturation_Slider = None
+        self.Upper_Value_Slider = None
 
-        self.Yellow_Hue_Slider = None
-        self.Yellow_Saturation_Slider = None
-        self.Yellow_Value_Slider = None
+        self.Lower_Hue_Slider = None
+        self.Lower_Saturation_Slider = None
+        self.Lower_Value_Slider = None
 
-        self.Object_Hue_Slider = None
-        self.Object_Saturation_Slider = None
-        self.Object_Value_Slider = None
+        self.lane1_button = None
+        self.lane2_button = None
+        self.object_button = None
+        self.finish_button = None
+        self.stop_button = None
+        self.quit_button = None
 
-        self.Finish_Hue_Slider = None
-        self.Finish_Saturation_Slider = None
-        self.Finish_Value_Slider = None
+        self.lane1_enable = True
+        self.lane2_enable = False
+        self.object_enable = False
+        self.finish_enable = False
 
-        self.Blue_Hue_Value = None
-        self.Blue_Saturation_Value = None
-        self.Blue_Value_Value = None
+        self.all_stop = False
+        self.color_update_ready = False
+        self.exit_run = False
 
-        self.Yellow_Hue_Value = None
-        self.Yellow_Saturation_Value = None
-        self.Yellow_Value_Value = None
-
-        self.Object_Hue_Value = None
-        self.Object_Saturation_Value = None
-        self.Object_Value_Value = None
-
-        self.Finish_Hue_Value = None
-        self.Finish_Saturation_Value = None
-        self.Finish_Value_Value = None
+        self.HSV_Lane1_Upper = None
+        self.HSV_Lane2_Upper = None
+        self.HSV_Object_Upper = None
+        self.HSV_Lane1_Lower = None
+        self.HSV_Lane2_Lower = None
+        self.HSV_Object_Lower = None
+        self.HSV_Finish_Upper = None
+        self.HSV_Finish_Lower = None
 
         self.slide_limit = 255
 
         self.menu = None
         self.menu_content = None
-        self.menu_reaction = None
+        self.menu_slide_reaction = None
 
         self.pressed = None
 
@@ -88,191 +89,234 @@ class interface(object):
 
         self.joystick_count = pygame.joystick.get_count()
 
+    def lane1_update(self):
+        self.lane1_enable = True
+        self.lane2_enable = False
+        self.object_enable = False
+        self.finish_enable = False
+        self.update_sliders(self.HSV_Lane1_Upper, self.HSV_Lane1_Lower)
+
+    def lane2_update(self):
+        self.lane1_enable = False
+        self.lane2_enable = True
+        self.object_enable = False
+        self.finish_enable = False
+        self.update_sliders(self.HSV_Lane2_Upper, self.HSV_Lane2_Lower)
+
+    def object_update(self):
+        self.lane1_enable = False
+        self.lane2_enable = False
+        self.object_enable = True
+        self.finish_enable = False
+        self.update_sliders(self.HSV_Object_Upper, self.HSV_Object_Lower)
+
+    def finish_update(self):
+        self.lane1_enable = False
+        self.lane2_enable = False
+        self.object_enable = False
+        self.finish_enable = True
+        self.update_sliders(self.HSV_Finish_Upper, self.HSV_Finish_Lower)
+
+    def stop_update(self):
+        if self.all_stop:
+            self.all_stop = False
+        else:
+            self.all_stop = True
+
     def create_menu(self):
-        self.Blue_Hue_Slider = thorpy.SliderX.make(length=100,
-                                                   limvals=(
+        self.lane1_button = thorpy.make_button("Lane 1 Color Choice",
+                                               func=self.lane1_update)
+
+        self.lane2_button = thorpy.make_button("Lane 2 Color Choice",
+                                               func=self.lane2_update)
+
+        self.object_button = thorpy.make_button("Object Color Choice",
+                                                func=self.object_update)
+
+        self.finish_button = thorpy.make_button("Finish Line Color Choice",
+                                                func=self.finish_update)
+
+        self.stop_button = thorpy.make_button("STOP!!",
+                                              func=self.stop_update)
+
+        self.quit_button = thorpy.make_button("Quit",
+                                              func=thorpy.functions.quit_func)
+
+        self.Upper_Hue_Slider = thorpy.SliderX.make(length=100,
+                                                    limvals=(
                                                        0,
                                                        self.slide_limit),
-                                                   text="Lane 1 Hue:",
-                                                   type_=int)
-        self.Blue_Saturation_Slider = thorpy.SliderX.make(length=100,
-                                                          limvals=(
+                                                    text="Upper Hue:",
+                                                    type_=int)
+        self.Upper_Saturation_Slider = thorpy.SliderX.make(length=100,
+                                                           limvals=(
                                                              0,
                                                              self.slide_limit),
-                                                          text="Lane 1 Sat:",
-                                                          type_=int)
-        self.Blue_Value_Slider = thorpy.SliderX.make(length=100,
-                                                     limvals=(
+                                                           text="Upper Sat:",
+                                                           type_=int)
+        self.Upper_Value_Slider = thorpy.SliderX.make(length=100,
+                                                      limvals=(
                                                          0,
                                                          self.slide_limit),
-                                                     text="Lane 1 Value:",
-                                                     type_=int)
+                                                      text="Upper Value:",
+                                                      type_=int)
 
-        self.Yellow_Hue_Slider = thorpy.SliderX.make(length=100,
-                                                     limvals=(
+        self.Lower_Hue_Slider = thorpy.SliderX.make(length=100,
+                                                    limvals=(
                                                          0,
                                                          self.slide_limit),
-                                                     text="Lane 2 Hue:",
-                                                     type_=int)
-        self.Yellow_Saturation_Slider = thorpy.SliderX.make(length=100,
-                                                            limvals=(
+                                                    text="Lower Hue:",
+                                                    type_=int)
+        self.Lower_Saturation_Slider = thorpy.SliderX.make(length=100,
+                                                           limvals=(
                                                              0,
                                                              self.slide_limit),
-                                                            text="Lane 2 Sat:",
-                                                            type_=int)
-        self.Yellow_Value_Slider = thorpy.SliderX.make(length=100,
-                                                       limvals=(
+                                                           text="Lower Sat:",
+                                                           type_=int)
+        self.Lower_Value_Slider = thorpy.SliderX.make(length=100,
+                                                      limvals=(
                                                            0,
                                                            self.slide_limit),
-                                                       text="Lane 2 Value:",
-                                                       type_=int)
+                                                      text="Lower Value:",
+                                                      type_=int)
 
-        self.Object_Hue_Slider = thorpy.SliderX.make(length=100,
-                                                     limvals=(
-                                                         0,
-                                                         self.slide_limit),
-                                                     text="Object Hue:",
-                                                     type_=int)
-        self.Object_Saturation_Slider = thorpy.SliderX.make(length=100,
-                                                            limvals=(
-                                                             0,
-                                                             self.slide_limit),
-                                                            text="Object Sat:",
-                                                            type_=int)
-        self.Object_Value_Slider = thorpy.SliderX.make(length=100,
-                                                       limvals=(
-                                                           0,
-                                                           self.slide_limit),
-                                                       text="Object Value:",
-                                                       type_=int)
-
-        self.Finish_Hue_Slider = thorpy.SliderX.make(length=100,
-                                                     limvals=(
-                                                         0,
-                                                         self.slide_limit),
-                                                     text="Finish Hue:",
-                                                     type_=int)
-        self.Finish_Saturation_Slider = thorpy.SliderX.make(length=100,
-                                                            limvals=(
-                                                             0,
-                                                             self.slide_limit),
-                                                            text="Finish Sat:",
-                                                            type_=int)
-        self.Finish_Value_Slider = thorpy.SliderX.make(length=100,
-                                                       limvals=(
-                                                        0,
-                                                        self.slide_limit),
-                                                       text="Finish Value:",
-                                                       type_=int)
         self.menu_content = thorpy.Box.make(elements=[
-            self.Blue_Hue_Slider,
-            self.Blue_Saturation_Slider,
-            self.Blue_Value_Slider,
-            self.Yellow_Hue_Slider,
-            self.Yellow_Saturation_Slider,
-            self.Yellow_Value_Slider,
-            self.Object_Hue_Slider,
-            self.Object_Saturation_Slider,
-            self.Object_Value_Slider,
-            self.Finish_Hue_Slider,
-            self.Finish_Saturation_Slider,
-            self.Finish_Value_Slider])
+            self.lane1_button,
+            self.lane2_button,
+            self.object_button,
+            self.finish_button,
+            self.stop_button,
+            self.Upper_Hue_Slider,
+            self.Upper_Saturation_Slider,
+            self.Upper_Value_Slider,
+            self.Lower_Hue_Slider,
+            self.Lower_Saturation_Slider,
+            self.Lower_Value_Slider,
+            self.quit_button])
 
-        self.menu_reaction = thorpy.Reaction(
+        self.menu_slide_reaction = thorpy.Reaction(
             reacts_to=thorpy.constants.THORPY_EVENT,
             reac_func=self.react_slider,
             event_args={"id": thorpy.constants.EVENT_SLIDE},
             reac_name="slider reaction")
-        self.menu_content.add_reaction(self.menu_reaction)
+        self.menu_content.add_reaction(self.menu_slide_reaction)
 
         self.menu = thorpy.Menu(self.menu_content)
 
         for element in self.menu.get_population():
             element.surface = self.screen
 
+        self.lane1_update()
         self.menu_content.set_topleft((self.frame_width, 100))
         self.menu_content.blit()
         self.menu_content.update()
 
     def get_slider_values(self):
+        self.color_update_ready = False
         return (
-            self.Blue_Hue_Value,
-            self.Blue_Saturation_Value,
-            self.Blue_Value_Value,
-
-            self.Yellow_Hue_Value,
-            self.Yellow_Saturation_Value,
-            self.Yellow_Value_Value,
-
-            self.Object_Hue_Value,
-            self.Object_Saturation_Value,
-            self.Object_Value_Value,
-
-            self.Finish_Hue_Value,
-            self.Finish_Saturation_Value,
-            self.Finish_Value_Value
+            self.HSV_Lane1_Upper,
+            self.HSV_Lane2_Upper,
+            self.HSV_Object_Upper,
+            self.HSV_Lane1_Lower,
+            self.HSV_Lane2_Lower,
+            self.HSV_Object_Lower,
+            self.HSV_Finish_Upper,
+            self.HSV_Finish_Lower,
         )
 
+    def get_all_stop(self):
+        return self.all_stop
+
+    def color_update_ready_call(self):
+        return self.color_update_ready
+
     def react_slider(self, event):
-        self.Blue_Hue_Value = self.Blue_Hue_Slider.get_value()
-        self.Blue_Saturation_Value = self.Blue_Saturation_Value.get_value()
-        self.Blue_Value_Value = self.Blue_Value_Value.get_value()
+        self.color_update_ready = True
 
-        self.Yellow_Hue_Value = self.Yellow_Hue_Value.get_value()
-        self.Yellow_Saturation_Value = self.Yellow_Saturation_Value.get_value()
-        self.Yellow_Value_Value = self.Yellow_Value_Value.get_value()
+        if self.lane1_enable:
+            self.HSV_Lane1_Upper = np.array(
+                [self.Upper_Hue_Slider.get_value(),
+                 self.Upper_Saturation_Slider.get_value(),
+                 self.Upper_Value_Slider.get_value()])
 
-        self.Object_Hue_Value = self.Object_Hue_Value.get_value()
-        self.Object_Saturation_Value = self.Object_Saturation_Value.get_value()
-        self.Object_Value_Value = self.Object_Value_Value.get_value()
+            self.HSV_Lane1_Lower = np.array(
+                [self.Lower_Hue_Slider.get_value(),
+                 self.Lower_Saturation_Slider.get_value(),
+                 self.Lower_Value_Slider.get_value()])
 
-        self.Finish_Hue_Value = self.Finish_Hue_Value.get_value()
-        self.Finish_Saturation_Value = self.Finish_Saturation_Value.get_value()
-        self.Finish_Value_Value = self.Finish_Value_Value.get_value()
+        elif self.lane2_enable:
+            self.HSV_Lane2_Upper = np.array(
+                [self.Upper_Hue_Slider.get_value(),
+                 self.Upper_Saturation_Slider.get_value(),
+                 self.Upper_Value_Slider.get_value()])
 
-    def update_sliders(self, blue_hue, blue_sat, blue_value,
-                       yellow_hue, yellow_sat, yellow_value,
-                       object_hue, object_sat, object_value,
-                       finish_hue, finish_sat, finish_value,):
-        self.Blue_Hue_Slider.unblit_and_reblit_func(
-            self.Blue_Hue_Slider.set_value,
-            value=blue_hue)
-        self.Blue_Saturation_Slider.unblit_and_reblit_func(
-            self.Blue_Saturation_Slider.set_value,
-            value=blue_sat)
-        self.Blue_Value_Slider.unblit_and_reblit_func(
-            self.Blue_Value_Slider.set_value,
-            value=blue_value)
+            self.HSV_Lane2_Lower = np.array(
+                [self.Lower_Hue_Slider.get_value(),
+                 self.Lower_Saturation_Slider.get_value(),
+                 self.Lower_Value_Slider.get_value()])
 
-        self.Yellow_Hue_Slider.unblit_and_reblit_func(
-            self.Yellow_Hue_Slider.set_value,
-            value=yellow_hue)
-        self.Yellow_Saturation_Slider.unblit_and_reblit_func(
-            self.Yellow_Saturation_Slider.set_value,
-            value=yellow_sat)
-        self.Yellow_Value_Slider.unblit_and_reblit_func(
-            self.Yellow_Value_Slider.set_value,
-            value=yellow_value)
+        elif self.object_enable:
+            self.HSV_Object_Upper = np.array(
+                [self.Upper_Hue_Slider.get_value(),
+                 self.Upper_Saturation_Slider.get_value(),
+                 self.Upper_Value_Slider.get_value()])
 
-        self.Object_Hue_Slider.unblit_and_reblit_func(
-            self.Object_Hue_Slider.set_value,
-            value=object_hue)
-        self.Object_Saturation_Slider.unblit_and_reblit_func(
-            self.Object_Saturation_Slider.set_value,
-            value=object_sat)
-        self.Object_Value_Slider.unblit_and_reblit_func(
-            self.Object_Value_Slider.set_value,
-            value=object_value)
+            self.HSV_Object_Lower = np.array(
+                [self.Lower_Hue_Slider.get_value(),
+                 self.Lower_Saturation_Slider.get_value(),
+                 self.Lower_Value_Slider.get_value()])
 
-        self.Finish_Hue_Slider.unblit_and_reblit_func(
-            self.Finish_Hue_Slider.set_value,
-            value=finish_hue)
-        self.Finish_Saturation_Slider.unblit_and_reblit_func(
-            self.Finish_Saturation_Slider.set_value,
-            value=finish_sat)
-        self.Finish_Value_Slider.unblit_and_reblit_func(
-            self.Finish_Value_Slider.set_value,
-            value=finish_value)
+        elif self.finish_enable:
+            self.HSV_Finish_Upper = np.array(
+                [self.Upper_Hue_Slider.get_value(),
+                 self.Upper_Saturation_Slider.get_value(),
+                 self.Upper_Value_Slider.get_value()])
+
+            self.HSV_Finish_Lower = np.array(
+                [self.Lower_Hue_Slider.get_value(),
+                 self.Lower_Saturation_Slider.get_value(),
+                 self.Lower_Value_Slider.get_value()])
+
+    def update_sliders(self, upper_hsv_values, lower_hsv_values):
+
+        self.Upper_Hue_Slider.unblit_and_reblit_func(
+            self.Upper_Hue_Slider.set_value,
+            value=upper_hsv_values[0])
+        self.Upper_Saturation_Slider.unblit_and_reblit_func(
+            self.Upper_Saturation_Slider.set_value,
+            value=upper_hsv_values[1])
+        self.Upper_Value_Slider.unblit_and_reblit_func(
+            self.Upper_Value_Slider.set_value,
+            value=upper_hsv_values[2])
+
+        self.Lower_Hue_Slider.unblit_and_reblit_func(
+            self.Lower_Hue_Slider.set_value,
+            value=lower_hsv_values[0])
+        self.Lower_Saturation_Slider.unblit_and_reblit_func(
+            self.Lower_Saturation_Slider.set_value,
+            value=lower_hsv_values[1])
+        self.Lower_Value_Slider.unblit_and_reblit_func(
+            self.Lower_Value_Slider.set_value,
+            value=lower_hsv_values[2])
+
+    def define_hsv_colours(self,
+                           HSV_Blue_Upper,
+                           HSV_Yellow_Upper,
+                           HSV_Object_Upper,
+                           HSV_Blue_Lower,
+                           HSV_Yellow_Lower,
+                           HSV_Object_Lower,
+                           HSV_Finish_Upper,
+                           HSV_Finish_Lower):
+
+        self.HSV_Lane1_Upper = HSV_Blue_Upper
+        self.HSV_Lane2_Upper = HSV_Yellow_Upper
+        self.HSV_Object_Upper = HSV_Object_Upper
+        self.HSV_Lane1_Lower = HSV_Blue_Lower
+        self.HSV_Lane2_Lower = HSV_Yellow_Lower
+        self.HSV_Object_Lower = HSV_Object_Lower
+        self.HSV_Finish_Upper = HSV_Finish_Upper
+        self.HSV_Finish_Lower = HSV_Finish_Lower
 
     def display_text(self, text, xpos, ypos, font_size):
         self.text = str(text)
@@ -298,6 +342,11 @@ class interface(object):
         pygame.event.pump()
         for event in pygame.event.get():
             self.menu.react(event)
+            if event.type == pygame.QUIT:
+                self.exit_run = True
+
+    def exit_check(self):
+        return self.exit_run
 
     def start_screen(self):
         self.screen = pygame.display.set_mode(

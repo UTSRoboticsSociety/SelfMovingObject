@@ -12,6 +12,15 @@ from imutils.video import WebcamVideoStream
 
 
 def initialize():
+    blue_upper = []
+    yellow_upper = []
+    object_upper = []
+    finish_upper = []
+
+    blue_lower = []
+    yellow_lower = []
+    object_lower = []
+    finish_lower = []
     detector_type = "HSVDetector"
     enable_Color_Picker = False
     serial_baud_rate = 115200
@@ -43,11 +52,6 @@ def initialize():
 
     # camera.open_video()
 
-    main_interface = interface.interface()
-    main_interface.start_screen()
-    main_interface.init_joystick()
-    joystick_count = main_interface.get_joystick_count()
-
     # work_image = camera.get_frame()
     work_image = camera.read()
 
@@ -59,6 +63,30 @@ def initialize():
     set_colour_picker(enable_Color_Picker=enable_Color_Picker,
                       detector=detector,
                       detector_type=detector_type)
+
+    main_interface = interface.interface()
+    main_interface.start_screen()
+    main_interface.init_joystick()
+    joystick_count = main_interface.get_joystick_count()
+
+    (blue_upper,
+     yellow_upper,
+     object_upper,
+     blue_lower,
+     yellow_lower,
+     object_lower,
+     finish_upper,
+     finish_lower) = detector.return_current_colors()
+
+    main_interface.define_hsv_colours(blue_upper,
+                                      yellow_upper,
+                                      object_upper,
+                                      blue_lower,
+                                      yellow_lower,
+                                      object_lower,
+                                      finish_upper,
+                                      finish_lower)
+    main_interface.create_menu()
 
     return (camera, seri, main_interface, joystick_count, work_image, detector)
 
@@ -168,6 +196,15 @@ def user_control_loop(window, joystick_enable, speed, direction, control):
 
 
 def main():
+    HSV_Blue_Upper = None
+    HSV_Yellow_Upper = None
+    HSV_Object_Upper = None
+    HSV_Blue_Lower = None
+    HSV_Yellow_Lower = None
+    HSV_Object_Lower = None
+    HSV_Finish_Upper = None
+    HSV_Finish_Lower = None
+
     joystick_enable = False
     control = False
     # buttonA = 0 # A Button
@@ -230,7 +267,13 @@ def main():
                                       direction=direction,
                                       control=control)
 
-        message = "{\"data\":["+str(speed)+","+direction + "]}"
+        if main_interface.get_all_stop():
+            speed = 1500
+            direction = "90"
+            message = "{\"data\":["+str(speed)+","+direction + "]}"
+        else:
+            message = "{\"data\":["+str(speed)+","+direction + "]}"
+
         print(len(message))
         seri.sendMessage(message=message, length=11)
         # display = work_image
@@ -242,9 +285,28 @@ def main():
 
         main_interface.update_frame(display)
 
-        cv2.imshow("Lane Detection", display)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if main_interface.color_update_ready_call():
+            (HSV_Blue_Upper,
+             HSV_Yellow_Upper,
+             HSV_Object_Upper,
+             HSV_Blue_Lower,
+             HSV_Yellow_Lower,
+             HSV_Object_Lower,
+             HSV_Finish_Upper,
+             HSV_Finish_Lower) = main_interface.get_slider_values()
+
+            detector.set_colors(
+                           HSV_Blue_Upper, HSV_Yellow_Upper, HSV_Object_Upper,
+                           HSV_Blue_Lower, HSV_Yellow_Lower, HSV_Object_Lower,
+                           HSV_Finish_Upper, HSV_Finish_Lower)
+
+        if main_interface.exit_check():
+            speed = 1500
+            direction = "90"
+            message = "{\"data\":["+str(speed)+","+direction + "]}"
+            seri.sendMessage(message=message, length=11)
+            exit()
+
         print("FPS: ", 1.0 / (time.time() - start_time))
 
         main_interface.process_events()
