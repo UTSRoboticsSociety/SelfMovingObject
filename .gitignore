@@ -106,3 +106,9 @@ venv.bak/
 # Video file
 /Videos
 *.pyc
+QUTDroid/__vm/.QUTDroid.vsarduino.h
+QUTDroid/QUTDroid.vcxproj
+QUTDroid/QUTDroid.sln
+QUTDroid/QUTDroid.vcxproj.filters
+QUTDroid/Debug/
+QUTDroid/__vm/
