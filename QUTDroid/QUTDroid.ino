@@ -8,7 +8,27 @@ UTS Robotics Society - QUT DRC Motor Controller
 Version 1.1 - June 2018
 Contributers: Kwang Baik, Jason Ho, James Ryan  
 */
+
+/*
+JSON Packet Structure
  
+Example: {"Mode" : "Driving","Throttle" : "255","Direction" : "0","Steering" : "180"}
+
+"Mode" can be:
+	Driving - Normal Operation and Clears Command Watchdog - Additional Arg Below:
+		Throttle - Ranges from 0 - 255 representing stopped - full speed
+		Direction - Switchs the "gear" of the car where:
+			0 = Netural - All Stop
+			1 = Forward
+			2 = Backward
+		Steering - Ranges from 0 - 180 and represents steerring servo angle 
+
+	Watchdog - Clears Command Watchdog Only - No Additional Args
+
+	Stop - Stops All Motion and Sets Steering to 90 (straight) - No Additional Args
+
+ */
+
 // Start User Settings
 
 #define LED_PIN 13
@@ -100,12 +120,12 @@ void CommandProcessor()
 		if (Packet.success()) {
 			if (Packet["Mode"] == "Drive")
 			{
-				Serial.println("RX Drive");
+				//Serial.println("RX Drive");
 				DroidCar.throttle = Packet["Throttle"];
 				unsigned char directionRaw = Packet["Direction"];
 				DroidCar.travelDirection = static_cast<DriveParameters::Direction>(directionRaw);
 				DroidCar.steeringAngle = Packet["Steering"];
-				Serial.println(String(DroidCar.throttle) + " | " + String(DroidCar.throttle) + " | " + String(directionRaw) +" | " + String(DroidCar.steeringAngle));
+				//Serial.println(String(DroidCar.throttle) + " | " + String(DroidCar.throttle) + " | " + String(directionRaw) +" | " + String(DroidCar.steeringAngle));
 			}
 			else if (Packet["Mode"] == "Stop")
 			{
