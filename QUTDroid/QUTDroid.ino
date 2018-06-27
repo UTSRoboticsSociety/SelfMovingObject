@@ -12,7 +12,7 @@ Contributers: Kwang Baik, Jason Ho, James Ryan
 /*
 JSON Packet Structure
  
-Example: {"Mode" : "Driving","Throttle" : "255","Direction" : "0","Steering" : "180"}
+Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "180"}
 
 "Mode" can be:
 	Driving - Normal Operation and Clears Command Watchdog - Additional Arg Below:
