@@ -31,6 +31,8 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "18
 
 // Start User Settings
 
+// Core Settings
+
 #define LED_PIN 13
 
 #define STEERING_SERVO_DATA_PIN 10
@@ -42,10 +44,23 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "18
 #define THROTTLE_SPEED_LIMITED_MAX 1600
 #define THROTTLE_SPEED_LIMITED_MIN 1350 //Us
 
+// Serial Comms Settings
 
 #define COMMS_BAUD_RATE 115200
 #define COMMS_SERIAL_TIMEOUT 10 // Serial Library timeout
 #define COMMS_COMMAND_TIMEOUT 10000 // Safety Timeout - Stops car if no command has been RX'ed in this time (in milliseconds)
+
+// Manual RC Control Setting
+
+//#define MANUAL_RC_ENABLED // Turns on Module
+
+#define MANUAL_RC_ON_BOARD_ENABLE_PIN 5
+
+#define MANUAL_RC_STEERING_PIN  2
+#define MANUAL_RC_THROTTLE_PIN	3
+#define MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN 4  
+
+// Bling Settings
 
 // End User Settings
 
@@ -58,7 +73,7 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "18
 #endif 
 
 Servo SteeringServo; 
-ESC ThrottleController (THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTLE_SPEED_PERIOD_MAX, THROTTLE_SPEED_PERIOD_ARM);
+ESC ThrottleController(THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTLE_SPEED_PERIOD_MAX, THROTTLE_SPEED_PERIOD_ARM);
 
 StaticJsonBuffer<200> CommsJSONBuffer;
 bool CommandWatchdogEnabled = false;
@@ -97,7 +112,7 @@ void SteeringSetup()
 void ThrottleSetup()
 {
 	ThrottleController.arm();
-	ThrottleController.speed(0);
+	ThrottleController.speed((THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2);
 }
 
 //---------------------------------------//
@@ -145,7 +160,7 @@ void CommandProcessor()
 
 	//Watchdog Check
 
-	if (millis() - commandWatchdogTimer > COMMS_COMMAND_TIMEOUT)
+	if (millis() - commandWatchdogTimer > COMMS_COMMAND_TIMEOUT && CommandWatchdogEnabled == true)
 	{
 		SafetyStop();
 		digitalWrite(LED_PIN, HIGH);
@@ -166,10 +181,10 @@ void DriveUpdate() {
 	switch (DroidCar.travelDirection)
 	{
 	case DriveParameters::Foward: 
-		speedPeriodRaw = map(DroidCar.throttle, 0, 255, (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2 , THROTTLE_SPEED_PERIOD_MAX);
+		speedPeriodRaw = map(DroidCar.throttle, 0, 255, (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2 , THROTTLE_SPEED_PERIOD_MIN);
 		break;
 	case DriveParameters::Backward: 
-		speedPeriodRaw = map(DroidCar.throttle, 0, 255, (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2, THROTTLE_SPEED_PERIOD_MIN);
+		speedPeriodRaw = map(DroidCar.throttle, 0, 255, (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2, THROTTLE_SPEED_PERIOD_MAX);
 		break;
 	case DriveParameters::Neutral: 
 		speedPeriodRaw = (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2;
@@ -181,14 +196,91 @@ void DriveUpdate() {
 	
 }
 
+#ifdef MANUAL_RC_ENABLED
+
+#include <PinChangeInterrupt.h>
+
+unsigned long SteeringTimer;
+unsigned long ThrottleTimer;
+unsigned long ActivateTimer;
+
+unsigned long SteeringPeriod;
+unsigned long ThrottlePeriod;
+unsigned long ActivatePeriod;
+
+void ManualControlTimerInterrupt(unsigned long *TimerVariable, unsigned long *FinalPeriod, bool State)
+{
+	if (State == true)
+	{
+		*TimerVariable = micros();
+	}
+	else
+	{
+		*FinalPeriod = micros() - *TimerVariable;
+	}
+}
+
+void ManualControlSteeringInputInterrupt()
+{
+	ManualControlTimerInterrupt(&SteeringTimer, &SteeringPeriod, digitalRead(MANUAL_RC_STEERING_PIN));
+}
+
+void ManualControlThrottleInputInterrupt()
+{
+	ManualControlTimerInterrupt(&ThrottleTimer, &ThrottlePeriod, digitalRead(MANUAL_RC_THROTTLE_PIN));
+}
+
+void ManualControlActivateInputInterrupt()
+{
+	ManualControlTimerInterrupt(&ActivateTimer, &ActivatePeriod, digitalRead(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN));
+}
+
+void ManualControlSetup()
+{
+	pinMode(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN, INPUT);
+	pinMode(MANUAL_RC_STEERING_PIN, INPUT);
+	pinMode(MANUAL_RC_THROTTLE_PIN, INPUT);
+
+	pinMode(MANUAL_RC_ON_BOARD_ENABLE_PIN, INPUT_PULLUP);
+
+	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_STEERING_PIN), ManualControlSteeringInputInterrupt, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_THROTTLE_PIN), ManualControlThrottleInputInterrupt, CHANGE);
+	attachPCINT(digitalPinToPCINT(MANUAL_RC_ON_BOARD_ENABLE_PIN), ManualControlActivateInputInterrupt, CHANGE);
+}
+
+void ManualControlUpdate()
+{
+	int steeringRawRC, throttleRawRC;
+}
+
+#endif // MANUAL_RC_ENABLED
+
 void setup() 
 {
 	SerialCommsSetup();
-	SteeringSetup();
 	ThrottleSetup();
+	SteeringSetup();
+	
+#ifdef MANUAL_RC_ENABLED
+	ManualControlSetup();
+#endif // MANUAL_RC_ENABLED
 }
+
 void loop() {
+	
+	
+#ifdef MANUAL_RC_ENABLED
+	if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH) {
+		ManualControlUpdate();
+	}
+	else
+	{
+		CommandProcessor();
+	}
+#else
 	CommandProcessor();
+#endif // MANUAL_RC_ENABLED
+
 	DriveUpdate();
 }   
 
