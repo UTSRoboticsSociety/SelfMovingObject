@@ -52,13 +52,19 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "18
 
 // Manual RC Control Setting
 
-//#define MANUAL_RC_ENABLED // Turns on Module
+#define MANUAL_RC_ENABLED // Turns on Module
 
 #define MANUAL_RC_ON_BOARD_ENABLE_PIN 5
 
 #define MANUAL_RC_STEERING_PIN  2
 #define MANUAL_RC_THROTTLE_PIN	3
-#define MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN 4  
+#define MANUAL_RC_MODE_AND_E_STOP_KILL_PIN 4  
+
+#define MANUAL_RC_RECEIVER_MAX_PERIOD 2000
+#define MANUAL_RC_RECEIVER_MIN_PERIOD 1000
+
+#define MANUAL_RC_SWITCH_STATE_UP_LIMIT 1000
+#define MANUAL_RC_SWITCH_STATE_DOWN_LIMIT 1750
 
 // Bling Settings
 
@@ -83,7 +89,7 @@ struct DriveParameters
 {
 	enum Direction : unsigned char
 	{
-		Foward = 1,
+		Forward = 1,
 		Backward = 2,
 		Neutral = 0
 	};
@@ -124,7 +130,20 @@ void SafetyStop()
 	DroidCar.steeringAngle = 90;
 }
 
-void CommandProcessor()
+void WatchdogCheck()
+{
+	if (millis() - commandWatchdogTimer > COMMS_COMMAND_TIMEOUT && CommandWatchdogEnabled == true)
+	{
+		SafetyStop();
+		digitalWrite(LED_PIN, HIGH);
+	}
+	else
+	{
+		digitalWrite(LED_PIN, LOW);
+	}
+}
+
+void SerialCommandProcessor()
 {
 	if (Serial.available() > 0)
 	{
@@ -157,19 +176,6 @@ void CommandProcessor()
 
 		CommsJSONBuffer.clear();
 	}
-
-	//Watchdog Check
-
-	if (millis() - commandWatchdogTimer > COMMS_COMMAND_TIMEOUT && CommandWatchdogEnabled == true)
-	{
-		SafetyStop();
-		digitalWrite(LED_PIN, HIGH);
-	}
-	else
-	{
-		digitalWrite(LED_PIN, LOW);
-	}
-
 }
 
 void DriveUpdate() {
@@ -180,7 +186,7 @@ void DriveUpdate() {
 
 	switch (DroidCar.travelDirection)
 	{
-	case DriveParameters::Foward: 
+	case DriveParameters::Forward: 
 		speedPeriodRaw = map(DroidCar.throttle, 0, 255, (THROTTLE_SPEED_PERIOD_MIN + THROTTLE_SPEED_PERIOD_MAX) / 2 , THROTTLE_SPEED_PERIOD_MIN);
 		break;
 	case DriveParameters::Backward: 
@@ -208,6 +214,16 @@ unsigned long SteeringPeriod;
 unsigned long ThrottlePeriod;
 unsigned long ActivatePeriod;
 
+struct RCControlModel
+{
+	unsigned char switch1State;
+	unsigned int switch1Period;
+	unsigned int steeringPeriod;
+	unsigned int throttlePeriod;
+};
+
+RCControlModel RCController1;
+
 void ManualControlTimerInterrupt(unsigned long *TimerVariable, unsigned long *FinalPeriod, bool State)
 {
 	if (State == true)
@@ -223,34 +239,66 @@ void ManualControlTimerInterrupt(unsigned long *TimerVariable, unsigned long *Fi
 void ManualControlSteeringInputInterrupt()
 {
 	ManualControlTimerInterrupt(&SteeringTimer, &SteeringPeriod, digitalRead(MANUAL_RC_STEERING_PIN));
+	RCController1.steeringPeriod = SteeringPeriod;
 }
 
 void ManualControlThrottleInputInterrupt()
 {
 	ManualControlTimerInterrupt(&ThrottleTimer, &ThrottlePeriod, digitalRead(MANUAL_RC_THROTTLE_PIN));
+	RCController1.throttlePeriod = ThrottlePeriod;
 }
 
 void ManualControlActivateInputInterrupt()
 {
-	ManualControlTimerInterrupt(&ActivateTimer, &ActivatePeriod, digitalRead(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN));
+	ManualControlTimerInterrupt(&ActivateTimer, &ActivatePeriod, digitalRead(MANUAL_RC_MODE_AND_E_STOP_KILL_PIN));
+	RCController1.switch1Period = ActivatePeriod;
+
+	if (RCController1.switch1Period <= MANUAL_RC_SWITCH_STATE_UP_LIMIT)
+	{
+		RCController1.switch1State = 2;
+	}
+	else if (RCController1.switch1Period > MANUAL_RC_SWITCH_STATE_UP_LIMIT && RCController1.switch1Period < MANUAL_RC_SWITCH_STATE_DOWN_LIMIT)
+	{
+		RCController1.switch1State = 1;
+	}
+	else
+	{
+		RCController1.switch1State = 0;
+	}
+
 }
 
 void ManualControlSetup()
 {
-	pinMode(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN, INPUT);
-	pinMode(MANUAL_RC_STEERING_PIN, INPUT);
-	pinMode(MANUAL_RC_THROTTLE_PIN, INPUT);
+	pinMode(MANUAL_RC_MODE_AND_E_STOP_KILL_PIN, INPUT_PULLUP);
+	pinMode(MANUAL_RC_STEERING_PIN, INPUT_PULLUP);
+	pinMode(MANUAL_RC_THROTTLE_PIN, INPUT_PULLUP);
 
 	pinMode(MANUAL_RC_ON_BOARD_ENABLE_PIN, INPUT_PULLUP);
 
 	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_STEERING_PIN), ManualControlSteeringInputInterrupt, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_THROTTLE_PIN), ManualControlThrottleInputInterrupt, CHANGE);
-	attachPCINT(digitalPinToPCINT(MANUAL_RC_ON_BOARD_ENABLE_PIN), ManualControlActivateInputInterrupt, CHANGE);
+	attachPCINT(digitalPinToPCINT(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN), ManualControlActivateInputInterrupt, CHANGE);
 }
 
-void ManualControlUpdate()
+void ManualControlProcessor()
 {
-	int steeringRawRC, throttleRawRC;
+	DroidCar.steeringAngle = map(RCController1.steeringPeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 180);
+	if (RCController1.throttlePeriod > (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2)
+	{
+		DroidCar.travelDirection = DroidCar.Backward;
+		DroidCar.throttle = constrain(map(RCController1.throttlePeriod, (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 255), 0, 255);
+	}
+	else if (RCController1.throttlePeriod < (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2)
+	{
+		DroidCar.travelDirection = DroidCar.Forward;
+		DroidCar.throttle = constrain(map(RCController1.throttlePeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2, 255, 0), 0,255);
+	}
+	else
+	{
+		DroidCar.travelDirection = DroidCar.Neutral;
+		DroidCar.throttle = 0;
+	}
 }
 
 #endif // MANUAL_RC_ENABLED
@@ -270,17 +318,24 @@ void loop() {
 	
 	
 #ifdef MANUAL_RC_ENABLED
-	if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH) {
-		ManualControlUpdate();
+	if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 0)
+	{
+		CommandWatchdogEnabled = true;
+		SafetyStop();
+	}
+	else if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 1) {
+		CommandWatchdogEnabled = false;
+		ManualControlProcessor();
 	}
 	else
 	{
-		CommandProcessor();
+		CommandWatchdogEnabled = true;
+		SerialCommandProcessor();
 	}
 #else
-	CommandProcessor();
+	SerialCommandProcessor();
 #endif // MANUAL_RC_ENABLED
-
+	WatchdogCheck();
 	DriveUpdate();
 }   
 
