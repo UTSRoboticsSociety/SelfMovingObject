@@ -1,4 +1,4 @@
-
+#include <PinChangeInterrupt.h>
 #include <ArduinoJson.h>
 #include "ESC.h"
 #include <Servo.h>
@@ -278,7 +278,7 @@ void ManualControlSetup()
 
 	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_STEERING_PIN), ManualControlSteeringInputInterrupt, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(MANUAL_RC_THROTTLE_PIN), ManualControlThrottleInputInterrupt, CHANGE);
-	attachPCINT(digitalPinToPCINT(MANUAL_RC_ACTIVATE_AND_E_STOP_KILL_PIN), ManualControlActivateInputInterrupt, CHANGE);
+	attachPCINT(digitalPinToPCINT(MANUAL_RC_MODE_AND_E_STOP_KILL_PIN), ManualControlActivateInputInterrupt, CHANGE);
 }
 
 void ManualControlProcessor()
@@ -286,12 +286,12 @@ void ManualControlProcessor()
 	DroidCar.steeringAngle = map(RCController1.steeringPeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 180);
 	if (RCController1.throttlePeriod > (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2)
 	{
-		DroidCar.travelDirection = DroidCar.Backward;
+		DroidCar.travelDirection = DroidCar.Forward;
 		DroidCar.throttle = constrain(map(RCController1.throttlePeriod, (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 255), 0, 255);
 	}
 	else if (RCController1.throttlePeriod < (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2)
 	{
-		DroidCar.travelDirection = DroidCar.Forward;
+		DroidCar.travelDirection = DroidCar.Backward;
 		DroidCar.throttle = constrain(map(RCController1.throttlePeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2, 255, 0), 0,255);
 	}
 	else
