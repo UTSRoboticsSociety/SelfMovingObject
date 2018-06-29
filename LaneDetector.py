@@ -150,7 +150,8 @@ class LaneDetector(object):
 
         return (tX, tY)
 
-    def draw_direction_lines(self, h1=None, h2=None, h3=None):
+    def draw_direction_lines(self, h1=None, h2=None, h3=None,
+                             obstacle_enable=False):
 
         self.lane_height = h1
 
@@ -189,13 +190,15 @@ class LaneDetector(object):
            or self.lv is None):
             self.lv = self.laneDetect(pixel_threshold=leftPixels,
                                       width=self.lane_width)
-
+        else:
+            self.lv = 0;
         if(self.laneDetect(pixel_threshold=rightPixels,
                            width=self.lane_width) > 0
            or self.rv is None):
             self.rv = self.laneDetect(pixel_threshold=rightPixels,
                                       width=self.lane_width)
-
+        else:
+            self.rv = self.lane_width;
         # objectPixels =
         # self.test_mask[self.lane_height - 300:self.lane_height + 1,
         # 0:self.test_mask.shape[1]]
@@ -205,7 +208,11 @@ class LaneDetector(object):
         # if(self.object_center_x > 0):
         #     print("OBJECTDETECTED")
 
-        (tX, tY) = self.obstacleDetection()
+        if obstacle_enable:
+            (tX, tY) = self.obstacleDetection()
+        else:
+            tX = 0
+            tY = 0
 
         # Draw lines over the image for lane detection
         leftline = lx1 + self.lv
@@ -258,8 +265,6 @@ class LaneDetector(object):
         # blur_image =
         # cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY)
         # self.blur_image(mask_image)
-        self.edge_low_threshold = 10
-        self.edge_high_threshold = 50
         self.canny_edge_image = cv2.Canny(cv2.cvtColor(mask_image,
                                                        cv2.COLOR_BGR2GRAY),
                                           self.edge_low_threshold,
@@ -299,12 +304,15 @@ class HSVDetector(LaneDetector):
                 self.HSV_Yellow_Lower,
                 self.HSV_Object_Lower,
                 self.HSV_Finish_Upper,
-                self.HSV_Finish_Lower)
+                self.HSV_Finish_Lower,
+                self.edge_low_threshold,
+                self.edge_high_threshold)
 
     def set_colors(self,
                    HSV_Blue_Upper, HSV_Yellow_Upper, HSV_Object_Upper,
                    HSV_Blue_Lower, HSV_Yellow_Lower, HSV_Object_Lower,
-                   HSV_Finish_Upper, HSV_Finish_Lower):
+                   HSV_Finish_Upper, HSV_Finish_Lower,
+                   Canny_Upper, Canny_Lower):
 
         if HSV_Blue_Upper is not None:
             self.HSV_Blue_Upper = np.array(HSV_Blue_Upper, dtype="uint8")
@@ -325,6 +333,11 @@ class HSVDetector(LaneDetector):
         if HSV_Finish_Lower is not None:
             self.HSV_Finish_Lower = np.array(HSV_Finish_Lower, dtype="uint8")
 
+        if Canny_Upper is not None:
+                self.edge_high_threshold = Canny_Upper
+        if Canny_Lower is not None:
+                self.edge_low_threshold = Canny_Lower
+
     def load_default_color_values(self):
         # 0 orange, 10 orange, 20 orangeyellow,
         # 30 yellow green, 40 yellow BGR_Green_Lower
@@ -334,12 +347,12 @@ class HSVDetector(LaneDetector):
         # 110 deeper blues #120 purlply #130 purply, #140 pink #150 pink # 160
         # 170 - 180 red
 
-        self.HSV_Blue_Upper = np.array([130, 255, 255], dtype="uint8")
+        self.HSV_Blue_Upper = np.array([135, 255, 255], dtype="uint8")
         self.HSV_Blue_Lower = np.array([80, 20, 20], dtype="uint8")
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
 
-        self.HSV_Yellow_Upper = np.array([40, 255, 255], dtype="uint8")
-        self.HSV_Yellow_Lower = np.array([15, 0, 50], dtype="uint8")
+        self.HSV_Yellow_Upper = np.array([41, 255, 255], dtype="uint8")
+        self.HSV_Yellow_Lower = np.array([0, 0, 50], dtype="uint8")
 
         # self.HSV_Yellow_Upper = np.array([0,0,0], dtype = "uint8")
         # self.HSV_Yellow_Lower =  np.array([0,0,0], dtype = "uint8")
@@ -350,6 +363,9 @@ class HSVDetector(LaneDetector):
         self.HSV_Finish_Upper = np.array([180, 255, 255], dtype="uint8")
         self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
 
+        self.edge_low_threshold = 10
+        self.edge_high_threshold = 50
+
     def get_lanes(self, base_frame, cropped_frame):
         # HSV_Blue_Upper = self.HSV_Blue_Upper,
         # HSV_Yellow_Upper = self.HSV_Yellow_Upper,
@@ -358,7 +374,7 @@ class HSVDetector(LaneDetector):
         # HSV_Yellow_Lower = self.HSV_Yellow_Lower,
         # HSV_Object_Lower  = self.HSV_Object_Lower,):
 
-        self.edge_detection(base_frame)
+        self.edge_detection(cropped_frame)
         # cv2.imshow("edges", self.edge_detection(base_frame))
         # cv2.imshow("edges", self.canny_edge_image)
         # cv2.waitKey(1)
@@ -410,7 +426,9 @@ class HSVDetector(LaneDetector):
             self.complete_mask = cv2.cvtColor(self.complete_mask,
                                               cv2.COLOR_GRAY2BGR)
 
-        return self.complete_mask
+
+        # return self.complete_mask
+        return self.blue_lane_mask, self.yellow_lane_mask, self.obstacle_mask
 
     def mask_colors(self, frame, hsvUpper, hsvLower):
         # blurred = cv2.GaussianBlur(dst, (5, 5), 0)

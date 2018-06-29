@@ -33,7 +33,7 @@ def initialize():
     serial_write_timeout = 2
     serial_dstdtr = False
     serial_intercharttimeout = None
-    serial_usingSerial = False
+    serial_usingSerial = True
     camera = WebcamVideoStream(src=0).start()
     # camera = WebcamVideoStream(src="C:\\Users\\Lordbordem.lordbordem-PC\\Desktop\\Robosoc\\SelfMovingObject\\Videos\\video2.mp4").start()
 
@@ -76,7 +76,9 @@ def initialize():
      yellow_lower,
      object_lower,
      finish_upper,
-     finish_lower) = detector.return_current_colors()
+     finish_lower,
+     canny_low,
+     canny_high) = detector.return_current_colors()
 
     main_interface.define_hsv_colours(blue_upper,
                                       yellow_upper,
@@ -85,7 +87,9 @@ def initialize():
                                       yellow_lower,
                                       object_lower,
                                       finish_upper,
-                                      finish_lower)
+                                      finish_lower,
+                                      canny_low,
+                                      canny_high)
     main_interface.create_menu()
 
     return (camera, seri, main_interface, joystick_count, work_image, detector)
@@ -120,38 +124,41 @@ def set_colour_picker(enable_Color_Picker, detector, detector_type):
                             blue_lower, yellow_lower, object_lower)
 
 
-def translate_key_controls(control, up, down, left, right, speed, direction):
+def translate_key_controls(control, up, down, left, right, speed, steering, direction):
     if(control):
         if(up):
-            speed = 1380
+            speed = 50
+            direction = "1"
         elif(down):
-            speed = 1600
+            speed = 50
+            direction = "2"
         else:
-            speed = 1500
+            speed = 0
+            direction = "0"
         if(left):
-            direction = "45"
+            steering = "45"
         elif (right):
-            direction = "135"
+            steering = "135"
         else:
-            direction = "90"
+            steering = "90"
 
-    return (speed, direction)
+    return (speed, steering, direction)
 
 
 def translate_stick_controls(axis0, axis1, axis2,
-                             axis3, axis4, axis5, speed, direction):
+                             axis3, axis4, axis5, speed, steering):
 
     if(abs(axis0) > 0.1):
-        direction = str(90 + 40 * axis0)
+        steering = str(90 + 40 * axis0)
     if(abs(axis5 + 1) > 0.1):
         speed = 1430 - 20 * (axis5 + 1)
     elif(abs(axis2 + 1) > 0.1):
         speed = 1570 + 20 * (axis2 + 1)
 
-    return (speed, direction)
+    return (speed, steering)
 
 
-def user_control_loop(window, joystick_enable, speed, direction, control):
+def user_control_loop(window, joystick_enable, speed, steering, control, direction):
     axis0 = 0  # Left / Right on left joystick
     # axis1 = 0  # Up / Dpwn on left joystick
     axis2 = 0  # R2 / L2 L2 is positive, R2 is negative.
@@ -173,26 +180,28 @@ def user_control_loop(window, joystick_enable, speed, direction, control):
              axis3,
              axis4,
              axis5) = window.get_joystick_input(joystick_num=0)
-            (speed, direction) = translate_stick_controls(axis0=axis0,
+            (speed, steering) = translate_stick_controls(axis0=axis0,
                                                           axis1=axis1,
                                                           axis2=axis2,
                                                           axis3=axis3,
                                                           axis4=axis4,
                                                           axis5=axis5,
                                                           speed=speed,
-                                                          direction=direction)
+                                                          steering=steering)
 
         elif joystick_count is 0 or joystick_enable is False:
             (speed,
+             steering,
              direction) = translate_key_controls(control=control,
                                                  up=up,
                                                  down=down,
                                                  left=left,
                                                  right=right,
                                                  speed=speed,
+                                                 steering=steering,
                                                  direction=direction)
 
-    return (speed, direction, control)
+    return (speed, steering, control, direction)
 
 
 def main():
@@ -207,6 +216,7 @@ def main():
 
     joystick_enable = False
     control = False
+    direction = "0";
     # buttonA = 0 # A Button
     # buttonY = 0 # Y Button
     main_interface = None
@@ -247,40 +257,81 @@ def main():
                 break
             continue
 
-        detector.get_lanes(base_frame=work_image,
-                           cropped_frame=work_image.copy())
+        (blueimg,
+         yellowimg,
+         obstacleimg) = detector.get_lanes(base_frame=work_image,
+                                           cropped_frame=work_image.copy())
+
+        obstacle_check = main_interface.get_obstacle_detect()
 
         (direction_line_image,
-         direction,
+         steering,
          canny_edge_image,
-         colour_image) = detector.draw_direction_lines(h1=detector_lane_height)
+         colour_image) = detector.draw_direction_lines(
+                                            h1=detector_lane_height,
+                                            obstacle_enable=obstacle_check)
+        (direction_line_image,
+         steering,
+         canny_edge_image,
+         colour_image) = detector.draw_direction_lines(
+                                               h1=(detector_lane_height-100),
+                                               obstacle_enable=obstacle_check)
+
+        blueimg = cv2.cvtColor(blueimg, cv2.COLOR_GRAY2BGR)
+        yellowimg = cv2.cvtColor(yellowimg, cv2.COLOR_GRAY2BGR)
+        obstacleimg = cv2.cvtColor(obstacleimg, cv2.COLOR_GRAY2BGR)
+
+        blueimg = cv2.bitwise_and(blueimg, work_image)
+        yellowimg = cv2.bitwise_and(yellowimg, work_image)
+        # obstacleimg = cv2.bitwise_and(obstacleimg, work_image)
 
         canny_edge_image = cv2.cvtColor(canny_edge_image, cv2.COLOR_GRAY2BGR)
-        direction = str((int((direction - 320) / 2)) + 90)
-        speed = 1390 + int(abs(int(direction) - 90) / 2)
 
+        steering = str((int((steering - 320) / 2)) + 90)
+        print("Test")
+        print(steering)
+        print(int(abs(int(steering) - 90 / 2)))
+        speed = 53 - int(abs(int(steering) - 90) / 4)
+        direction = "1"
         (speed,
-         direction,
-         control) = user_control_loop(window=main_interface,
-                                      joystick_enable=joystick_enable,
-                                      speed=speed,
-                                      direction=direction,
-                                      control=control)
+         steering,
+         control,
+         direction) = user_control_loop(window=main_interface,
+                                        joystick_enable=joystick_enable,
+                                        speed=speed,
+                                        steering=steering,
+                                        control=control,
+                                        direction=direction)
 
         if main_interface.get_all_stop():
-            speed = 1500
-            direction = "90"
-            message = "{\"data\":["+str(speed)+","+direction + "]}"
+            mode = "Drive"
+            speed = 0
+            direction = "0"
+            steering = "180"
+            message = ("{\"Mode\" : \"" + mode + "\"," +
+                       "\"Throttle\" : \"" + str(speed) + "\"," +
+                       "\"Direction\" : \"" + direction + "\"," +
+                       "\"Steering\" : \"" + steering + "\"}")
         else:
-            message = "{\"data\":["+str(speed)+","+direction + "]}"
+            mode = "Drive"
+            # speed = 50
+            # direction = "1"
+            # steering = "180"
+            message = ("{\"Mode\" : \"Drive\","
+                       "\"Throttle\" : \"" + str(speed) + "\"," +
+                       "\"Direction\" : \"" + direction + "\"," +
+                       "\"Steering\" : \"" + steering + "\"}")
 
-        print(len(message))
-        seri.sendMessage(message=message, length=11)
+        seri.sendMessage(message=message, length=len(message))
         # display = work_image
-        displaytop = np.hstack((work_image, direction_line_image))
-        displaybot = np.hstack((canny_edge_image, colour_image))
-        display = np.vstack((displaytop, displaybot))
+        displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
+        displaybot = np.hstack((
+                           direction_line_image, canny_edge_image, work_image))
 
+        # displaytop = np.hstack((blueimg, direction_line_image, work_image))
+        # displaybot = np.hstack((yellowimg, colour_image, canny_edge_image))
+        display = np.vstack((displaytop, displaybot))
+        # display = direction_line_image
         # display = cv2.resize(display, (1500, 750))
 
         main_interface.update_frame(display)
@@ -293,18 +344,24 @@ def main():
              HSV_Yellow_Lower,
              HSV_Object_Lower,
              HSV_Finish_Upper,
-             HSV_Finish_Lower) = main_interface.get_slider_values()
+             HSV_Finish_Lower,
+             Upper_Canny_Value,
+             Lower_Canny_Value) = main_interface.get_slider_values()
 
             detector.set_colors(
                            HSV_Blue_Upper, HSV_Yellow_Upper, HSV_Object_Upper,
                            HSV_Blue_Lower, HSV_Yellow_Lower, HSV_Object_Lower,
-                           HSV_Finish_Upper, HSV_Finish_Lower)
+                           HSV_Finish_Upper, HSV_Finish_Lower,
+                           Upper_Canny_Value, Lower_Canny_Value)
 
         if main_interface.exit_check():
-            speed = 1500
-            direction = "90"
-            message = "{\"data\":["+str(speed)+","+direction + "]}"
-            seri.sendMessage(message=message, length=11)
+            speed = 0
+            steering = "180"
+            message = ("{\"Mode\" : \"Drive\"," +
+                       "\"Throttle\" : \"" + str(speed) + "\"," +
+                       "\"Direction\" : \"0\"," +
+                       "\"Steering\" : \"" + str(steering) + "\"}")
+            seri.sendMessage(message=message, length=len(message))
             exit()
 
         print("FPS: ", 1.0 / (time.time() - start_time))
