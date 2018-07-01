@@ -12,7 +12,7 @@ Contributers: Kwang Baik, Jason Ho, James Ryan
 /*
 JSON Packet Structure
  
-Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "0","Steering" : "180"}
+Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "180"}
 
 "Mode" can be:
 	Driving - Normal Operation and Clears Command Watchdog - Additional Arg Below:
@@ -318,12 +318,12 @@ void loop() {
 	
 	
 #ifdef MANUAL_RC_ENABLED
-	if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 0)
+	if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 0)
 	{
 		CommandWatchdogEnabled = true;
 		SafetyStop();
 	}
-	else if (!digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 1) {
+	else if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 1) {
 		CommandWatchdogEnabled = false;
 		ManualControlProcessor();
 	}
