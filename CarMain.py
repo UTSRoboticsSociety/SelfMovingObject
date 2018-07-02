@@ -229,11 +229,12 @@ def main():
     blank_image_count = 0
 
     # Detector Variables
-    detector_lane_height = 330
+    detector_lane_height = 250
 
     # Detector Lines
-    leftlines = [0, 0]
-    rightlines = [0, 0]
+    linecount = 4
+    leftlines = [0] * linecount
+    rightlines = [0] * linecount
     # videonumber = 1
     # url = ('Videos/video' + str(videonumber) + '.mp4')
 
@@ -267,17 +268,16 @@ def main():
 
         obstacle_check = main_interface.get_obstacle_detect()
 
-        print(leftlines)
-        for i in range(2):
+        for i in range(linecount):
             leftlines[i], rightlines[i] = detector.draw_direction_lines(
-                                                h1=detector_lane_height - i * 30,
+                                                h1=detector_lane_height - i*50,
                                                 obstacle_enable=obstacle_check)
-
 
         (direction_line_image,
          steering,
          canny_edge_image,
          colour_image) = detector.mid_line_calc(
+                                            detector_lane_height,
                                             leftlines,
                                             rightlines)
 
@@ -291,12 +291,10 @@ def main():
         # obstacleimg = cv2.bitwise_and(obstacleimg, work_image)
 
         canny_edge_image = cv2.cvtColor(canny_edge_image, cv2.COLOR_GRAY2BGR)
-
-        steering = str((int((steering - 320) / 2)) + 90)
-        print("Test")
-        print(steering)
-        print(int(abs(int(steering) - 90 / 2)))
-        speed = 53 - int(abs(int(steering) - 90) / 4)
+        steering = str((int((steering - 320) / 1.8)) + 90)
+        speed = 58 - int(abs(int(steering) - 90) / 2.4)
+        if(speed < 50):
+            speed = 50
         direction = "1"
         (speed,
          steering,
@@ -329,14 +327,16 @@ def main():
 
         seri.sendMessage(message=message, length=len(message))
         # display = work_image
-        displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
-        displaybot = np.hstack((
-                           direction_line_image, canny_edge_image, work_image))
-
-        # displaytop = np.hstack((blueimg, direction_line_image, work_image))
-        # displaybot = np.hstack((yellowimg, colour_image, canny_edge_image))
-        display = np.vstack((displaytop, displaybot))
-        # display = direction_line_image
+############################################################################################################
+        debug = False
+        debug = True
+        if(debug):
+            displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
+            displaybot = np.hstack((
+                          direction_line_image, canny_edge_image, work_image))
+            display = np.vstack((displaytop, displaybot))
+        else:
+            display = direction_line_image
         # display = cv2.resize(display, (1500, 750))
 
         main_interface.update_frame(display)

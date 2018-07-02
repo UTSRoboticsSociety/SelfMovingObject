@@ -7,7 +7,7 @@ class Serial2(object):
     def __init__(self, port, baud, bytesize, parity, stopbits, timeout,
                  xonxoff, rtscts, writetimeout,
                  dstdtr, intercharttimeout, usingSerial):
-        self.usingSerial = False#usingSerial  # To disable serial functionality
+        self.usingSerial = usingSerial  # To disable serial functionality
         self.port = port
         self.baud = baud
         self.bytesize = bytesize
@@ -71,13 +71,12 @@ class Serial2(object):
                 pass
 
     def sendMessage(self, message, length):
-        print("Tset")
         if(self.usingSerial):
             try:
                 # print ("Port %s set to %d %s%s%s (%ds timeout)" %
                 # (self.port,self.baud,self.bytesize,
                 # self.parity,self.stopbits,self.timeout))
-                print ("sending '%s'"%message)
+                #print ("sending '%s'"%message)
                 # write a string
                 self.ser.write(bytes(message, encoding="ascii"))
                 time.sleep(0.015)
@@ -86,4 +85,3 @@ class Serial2(object):
                 print(e.strerror)
                 print("failed to open %s" % self.port)
                 pass
-        print("test")
