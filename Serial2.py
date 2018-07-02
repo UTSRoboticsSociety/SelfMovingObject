@@ -7,7 +7,7 @@ class Serial2(object):
     def __init__(self, port, baud, bytesize, parity, stopbits, timeout,
                  xonxoff, rtscts, writetimeout,
                  dstdtr, intercharttimeout, usingSerial):
-        self.usingSerial = usingSerial  # To disable serial functionality
+        self.usingSerial = False#usingSerial  # To disable serial functionality
         self.port = port
         self.baud = baud
         self.bytesize = bytesize

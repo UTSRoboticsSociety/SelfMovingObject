@@ -87,6 +87,8 @@ class LaneDetector(object):
         # Direction lines
         self.travel_direction = 0
         self.mid_line = 0
+        self.left_line = 0
+        self.right_line = 0
 
         # initial positions of detection lines
         self.lv = int(self.lane_width / 2)
@@ -191,14 +193,14 @@ class LaneDetector(object):
             self.lv = self.laneDetect(pixel_threshold=leftPixels,
                                       width=self.lane_width)
         else:
-            self.lv = 0;
+            self.lv = -1;
         if(self.laneDetect(pixel_threshold=rightPixels,
                            width=self.lane_width) > 0
            or self.rv is None):
             self.rv = self.laneDetect(pixel_threshold=rightPixels,
                                       width=self.lane_width)
         else:
-            self.rv = self.lane_width;
+            self.rv = -1;
         # objectPixels =
         # self.test_mask[self.lane_height - 300:self.lane_height + 1,
         # 0:self.test_mask.shape[1]]
@@ -257,8 +259,24 @@ class LaneDetector(object):
                        7, (0, 0, 255), thickness=10, lineType=8, shift=0)
 
         # cv2.cvtColor(self.test_mask, cv2.COLOR_GRAY2BGR) #self.colour_image
+        #return (self.overlay_mask, self.mid_line,
+        #        self.canny_edge_image, self.colour_image)
+        return leftline, rightline
+    def mid_line_calc(self, leftlines, rightlines):
+        #self.left_line = 0
+        #self.right_line = 0
+        for i in range(len(leftlines)):
+            if(leftlines[i] != -1):
+                self.left_line = leftlines[i]
+                break
+        for i in range(len(rightlines)):
+            if(rightlines[i] != -1):
+                self.right_line = rightlines[i]
+                break
+        self.mid_line = (int)((self.right_line + self.left_line) / 2)
         return (self.overlay_mask, self.mid_line,
                 self.canny_edge_image, self.colour_image)
+
 
     def edge_detection(self, mask_image):
         # Basic Edge Detection (not implemented)

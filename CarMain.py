@@ -231,6 +231,9 @@ def main():
     # Detector Variables
     detector_lane_height = 330
 
+    # Detector Lines
+    leftlines = [0, 0]
+    rightlines = [0, 0]
     # videonumber = 1
     # url = ('Videos/video' + str(videonumber) + '.mp4')
 
@@ -264,18 +267,20 @@ def main():
 
         obstacle_check = main_interface.get_obstacle_detect()
 
+        print(leftlines)
+        for i in range(2):
+            leftlines[i], rightlines[i] = detector.draw_direction_lines(
+                                                h1=detector_lane_height - i * 30,
+                                                obstacle_enable=obstacle_check)
+
+
         (direction_line_image,
          steering,
          canny_edge_image,
-         colour_image) = detector.draw_direction_lines(
-                                            h1=detector_lane_height,
-                                            obstacle_enable=obstacle_check)
-        (direction_line_image,
-         steering,
-         canny_edge_image,
-         colour_image) = detector.draw_direction_lines(
-                                               h1=(detector_lane_height-100),
-                                               obstacle_enable=obstacle_check)
+         colour_image) = detector.mid_line_calc(
+                                            leftlines,
+                                            rightlines)
+
 
         blueimg = cv2.cvtColor(blueimg, cv2.COLOR_GRAY2BGR)
         yellowimg = cv2.cvtColor(yellowimg, cv2.COLOR_GRAY2BGR)
