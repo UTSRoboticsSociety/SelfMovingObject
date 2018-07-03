@@ -231,8 +231,11 @@ def main():
     # Detector Variables
     detector_lane_height = 250
 
+    foundGreen = False
+    greenCount = 0;
+
     # Detector Lines
-    linecount = 4
+    linecount = 3
     leftlines = [0] * linecount
     rightlines = [0] * linecount
     # videonumber = 1
@@ -276,7 +279,8 @@ def main():
         (direction_line_image,
          steering,
          canny_edge_image,
-         colour_image) = detector.mid_line_calc(
+         colour_image,
+         detected) = detector.mid_line_calc(
                                             detector_lane_height,
                                             leftlines,
                                             rightlines)
@@ -291,10 +295,24 @@ def main():
         # obstacleimg = cv2.bitwise_and(obstacleimg, work_image)
 
         canny_edge_image = cv2.cvtColor(canny_edge_image, cv2.COLOR_GRAY2BGR)
+
+        if(detected):
+            foundGreen = True
+
         steering = str((int((steering - 320) / 1.8)) + 90)
-        speed = 58 - int(abs(int(steering) - 90) / 2.4)
+        speed = 57 - int(abs(int(steering) - 90) / 2.4)
         if(speed < 50):
             speed = 50
+        if(foundGreen):
+            greenCount = greenCount + 1;
+        if(greenCount > 15):
+            speed = 0;
+        if(greenCount > 30):
+            steering = "90"
+
+        if(greenCount > 200):
+            greenCount = 0
+            foundGreen = False
         direction = "1"
         (speed,
          steering,
@@ -329,7 +347,7 @@ def main():
         # display = work_image
 ############################################################################################################
         debug = False
-        debug = True
+        #debug = True
         if(debug):
             displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
             displaybot = np.hstack((

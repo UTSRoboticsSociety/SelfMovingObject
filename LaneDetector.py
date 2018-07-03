@@ -11,6 +11,8 @@ class LaneDetector(object):
         self.canny_edge_image = None
         self.colour_image = None
 
+
+        self.original = None
         self.blue_lane_mask = None
         self.yellow_lane_mask = None
         self.object_mask = None
@@ -159,35 +161,7 @@ class LaneDetector(object):
 
         return cnts
 
-    def greenDetection(self):
-        green = self.work_frame[170:280, 0:640]
-        green = self.mask_colors(self.work_frame,
-                                               self.HSV_Green_Upper,
-                                               self.HSV_Green_Lower)
 
-        # obstacle = cv2.GaussianBlur(obstacle, (5, 5), 0)
-        # obstacle = cv2.threshold(obstacle, 150, 255, cv2.THRESH_BINARY)[1]
-        # cv2.imshow("testsS", obstacle)
-        # cv2.waitKey(10)
-        cnts = cv2.findContours(obstacle, cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-        count = 0
-        tX = 0
-        tY = 0
-
-        for c in cnts:
-            # compute the center of the contour
-            M = cv2.moments(c)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            cv2.line(self.overlay_mask, (cX, cY - 10 + 100),
-                     ((cX), cY + 10 + 100),
-                     [255,0,0],
-                     self.lane_line_thickness,
-                     self.lane_line_type, self.lane_line_shift)
-
-        return cnts
 
         # for c in cnts:
         #     # compute the center of the contour
@@ -203,6 +177,31 @@ class LaneDetector(object):
         #     tY = int(tY / count)
         #
         # return (tX, tY)
+
+    def greenDetection(self):
+
+        green = self.work_frame[230:330, 0:640]
+
+
+
+        green = self.mask_colors(green,
+                                               self.HSV_Green_Upper,
+                                               self.HSV_Green_Lower)
+
+        green = cv2.threshold(green, 150, 255, cv2.THRESH_BINARY)[1]
+        # cv2.imshow("test", green)
+        # cv2.waitKey(10)
+        cnts = cv2.findContours(green, cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+        area = 0
+        for c in cnts:
+            area = area + cv2.contourArea(c)
+
+        detected = False
+        if(area > 500):
+            detected = True
+        return detected
 
     def draw_direction_lines(self, h1=None, h2=None, h3=None,
                              obstacle_enable=False):
@@ -287,12 +286,12 @@ class LaneDetector(object):
                  self.lane_direction_line_color,
                  self.lane_line_thickness,
                  self.lane_line_type, self.lane_line_shift)
-
-        cv2.line(self.overlay_mask, ((right_line), self.lane_height - 25),
-                 ((right_line), self.lane_height + 25),
-                 self.lane_direction_line_color,
-                 self.lane_line_thickness,
-                 self.lane_line_type, self.lane_line_shift)
+        if (right_line > self.lx2):
+            cv2.line(self.overlay_mask, ((right_line), self.lane_height - 25),
+                     ((right_line), self.lane_height + 25),
+                     [0,255,255],
+                     self.lane_line_thickness,
+                     self.lane_line_type, self.lane_line_shift)
 
         # cv2.line(self.overlay_mask, ((self.mid_line), self.lane_height - 50),
         #          ((self.mid_line), self.lane_height + 50),
@@ -309,6 +308,7 @@ class LaneDetector(object):
     def mid_line_calc(self, laneheight, leftlines, rightlines):
         # self.left_line = 0
         # self.right_line = 0
+        detected = self.greenDetection()
         self.lane_height = laneheight
         lefti = 0
         righti = 0
@@ -369,7 +369,7 @@ class LaneDetector(object):
 
 
         return (self.overlay_mask, self.mid_line,
-                self.canny_edge_image, self.colour_image)
+                self.canny_edge_image, self.colour_image, detected)
 
 
     def findGap(self, cnts, leftline, rightline):
@@ -485,6 +485,9 @@ class HSVDetector(LaneDetector):
         # 110 deeper blues #120 purlply #130 purply, #140 pink #150 pink # 160
         # 170 - 180 red
 
+        self.HSV_Green_Upper = np.array([71, 255, 255], dtype="uint8")
+        self.HSV_Green_Lower = np.array([54, 99, 99], dtype="uint8")
+
         self.HSV_Blue_Upper = np.array([135, 255, 255], dtype="uint8")
         self.HSV_Blue_Lower = np.array([80, 20, 20], dtype="uint8")
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
@@ -502,7 +505,7 @@ class HSVDetector(LaneDetector):
         self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
 
         self.edge_low_threshold = 10
-        self.edge_high_threshold = 100
+        self.edge_high_threshold = 75
 
     def get_lanes(self, base_frame, cropped_frame):
         # HSV_Blue_Upper = self.HSV_Blue_Upper,
@@ -516,7 +519,7 @@ class HSVDetector(LaneDetector):
         # cv2.imshow("edges", self.edge_detection(base_frame))
         # cv2.imshow("edges", self.canny_edge_image)
         # cv2.waitKey(1)
-
+        self.origianl = base_frame.copy()
         self.work_frame = base_frame.copy()
         self.cropped_work_frame = cropped_frame.copy()
         self.gray_image = cv2.cvtColor(self.cropped_work_frame,
