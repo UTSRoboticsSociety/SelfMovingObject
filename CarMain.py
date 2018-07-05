@@ -234,8 +234,9 @@ def main():
     foundGreen = False
     greenCount = 0;
 
-    # Detector Lines
+    # Detector Line
     linecount = 4
+
     leftlines = [0] * linecount
     rightlines = [0] * linecount
     # videonumber = 1
@@ -257,7 +258,7 @@ def main():
         start_time = time.time()
 
         work_image = camera.read()
-
+        work_image = work_image[0:320, 0:640] #fps
         if work_image is None:
             blank_image_count += 1
             if blank_image_count is 60:
@@ -298,12 +299,13 @@ def main():
 
         if(detected):
             foundGreen = True
-
+        print(str(steering) + "  test")
         steering = str((int((steering - 320) / 1.5)) + 90)
+
         # if(int (steering) > 110):
         #     steering = "145"
-        print(steering)
-        speed = 49 - int(abs(int(steering) - 90) / 2.4)
+        #print(steering)
+        speed = 59 - int(abs(int(steering) - 90) / 2.4)
         if(speed < 44):
             speed = 44
         if(foundGreen):
@@ -313,9 +315,13 @@ def main():
         if(greenCount > 30):
             steering = "90"
 
-        if(greenCount > 50):
+        if(greenCount > 150):
             greenCount = 0
             foundGreen = False
+        if(int(steering) < 35):
+            steering = "35"
+        if(int(steering) > 145):
+            steering = "145"
         direction = "1"
         (speed,
          steering,
@@ -350,7 +356,7 @@ def main():
         # display = work_image
 ############################################################################################################
         debug = False
-        debug = True
+        #debug = True
         if(debug):
             displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
             displaybot = np.hstack((
@@ -391,7 +397,7 @@ def main():
             seri.sendMessage(message=message, length=len(message))
             exit()
 
-        print("FPS: ", 1.0 / (time.time() - start_time))
+        #print("FPS: ", 1.0 / (time.time() - start_time))
 
         main_interface.process_events()
 

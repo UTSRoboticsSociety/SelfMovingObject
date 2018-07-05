@@ -155,8 +155,8 @@ class LaneDetector(object):
             cY = int(M["m01"] / M["m00"])
             cv2.line(self.overlay_mask, (cX, cY - 10 + 100),
                      ((cX), cY + 10 + 100),
-                     [255,0,0],
-                     self.lane_line_thickness,
+                     [0,0,255],
+                     self.lane_line_thickness * 6,
                      self.lane_line_type, self.lane_line_shift)
 
         return cnts
@@ -346,7 +346,7 @@ class LaneDetector(object):
             tX = 0
             tY = 0
 
-        self.left_line, self.right_line = self.findGap(cnts, self.left_line, self.right_line)
+        self.left_line, self.right_line = self.findGap(cnts, self.left_line, self.right_line, righti, lefti)
 
         if(tX > 0):
             if(abs(tX - self.left_line) > abs(tX - self.right_line)):
@@ -383,7 +383,7 @@ class LaneDetector(object):
                 self.canny_edge_image, self.colour_image, detected)
 
 
-    def findGap(self, cnts, leftline, rightline):
+    def findGap(self, cnts, leftline, rightline, righti, lefti):
         array = [0] * (len(cnts) + 2)
 
         for i in range(len(cnts)):
@@ -392,9 +392,9 @@ class LaneDetector(object):
             array[i] = cX
 
         i = len(cnts)
-        array[i] = leftline
+        array[i] = leftline - 25 * lefti
         i = len(cnts) + 1
-        array[i] = rightline
+        array[i] = rightline + 25 * righti
 
         array.sort()
 
@@ -497,14 +497,14 @@ class HSVDetector(LaneDetector):
         # 170 - 180 red
 
         self.HSV_Green_Upper = np.array([76, 112, 255], dtype="uint8")
-        self.HSV_Green_Lower = np.array([61, 13, 171], dtype="uint8")
+        self.HSV_Green_Lower = np.array([61, 40, 171], dtype="uint8")
 
-        self.HSV_Blue_Upper = np.array([135, 255, 255], dtype="uint8")
-        self.HSV_Blue_Lower = np.array([79, 20, 20], dtype="uint8")
+        self.HSV_Blue_Upper = np.array([120, 255, 255], dtype="uint8")
+        self.HSV_Blue_Lower = np.array([97, 35, 22], dtype="uint8")
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
 
         self.HSV_Yellow_Upper = np.array([41, 161, 255], dtype="uint8")
-        self.HSV_Yellow_Lower = np.array([18, 31, 135], dtype="uint8")
+        self.HSV_Yellow_Lower = np.array([18, 56, 135], dtype="uint8")
 
         # self.HSV_Yellow_Upper = np.array([0,0,0], dtype = "uint8")
         # self.HSV_Yellow_Lower =  np.array([0,0,0], dtype = "uint8")
@@ -521,7 +521,7 @@ class HSVDetector(LaneDetector):
         self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
 
         self.edge_low_threshold = 0
-        self.edge_high_threshold = 45
+        self.edge_high_threshold = 37
 
     def get_lanes(self, base_frame, cropped_frame):
         # HSV_Blue_Upper = self.HSV_Blue_Upper,
