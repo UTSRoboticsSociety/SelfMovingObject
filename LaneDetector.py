@@ -485,21 +485,25 @@ class HSVDetector(LaneDetector):
         # 110 deeper blues #120 purlply #130 purply, #140 pink #150 pink # 160
         # 170 - 180 red
 
-        self.HSV_Green_Upper = np.array([71, 255, 255], dtype="uint8")
-        self.HSV_Green_Lower = np.array([54, 99, 99], dtype="uint8")
+        self.HSV_Green_Upper = np.array([76, 112, 255], dtype="uint8")
+        self.HSV_Green_Lower = np.array([61, 13, 171], dtype="uint8")
 
         self.HSV_Blue_Upper = np.array([135, 255, 255], dtype="uint8")
-        self.HSV_Blue_Lower = np.array([80, 20, 20], dtype="uint8")
+        self.HSV_Blue_Lower = np.array([79, 20, 20], dtype="uint8")
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
 
-        self.HSV_Yellow_Upper = np.array([41, 255, 255], dtype="uint8")
-        self.HSV_Yellow_Lower = np.array([20, 0, 50], dtype="uint8")
+        self.HSV_Yellow_Upper = np.array([41, 130, 255], dtype="uint8")
+        self.HSV_Yellow_Lower = np.array([18, 31, 135], dtype="uint8")
 
         # self.HSV_Yellow_Upper = np.array([0,0,0], dtype = "uint8")
         # self.HSV_Yellow_Lower =  np.array([0,0,0], dtype = "uint8")
 
-        self.HSV_Object_Upper = np.array([20, 255, 255], dtype="uint8")
-        self.HSV_Object_Lower = np.array([0, 100, 20], dtype="uint8")
+        self.HSV_Object_Upper = np.array([165, 255, 54], dtype="uint8")
+        self.HSV_Object_Lower = np.array([143, 70, 0], dtype="uint8")
+
+        #red
+        #self.HSV_Object_Upper = np.array([20, 255, 255], dtype="uint8")
+        #self.HSV_Object_Lower = np.array([0, 100, 20], dtype="uint8")
 
         self.HSV_Finish_Upper = np.array([180, 255, 255], dtype="uint8")
         self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
