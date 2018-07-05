@@ -127,18 +127,18 @@ def set_colour_picker(enable_Color_Picker, detector, detector_type):
 def translate_key_controls(control, up, down, left, right, speed, steering, direction):
     if(control):
         if(up):
-            speed = 50
+            speed = 56
             direction = "1"
         elif(down):
-            speed = 50
+            speed = 60
             direction = "2"
         else:
             speed = 0
             direction = "0"
         if(left):
-            steering = "45"
+            steering = "35"
         elif (right):
-            steering = "135"
+            steering = "145"
         else:
             steering = "90"
 
@@ -147,13 +147,13 @@ def translate_key_controls(control, up, down, left, right, speed, steering, dire
 
 def translate_stick_controls(axis0, axis1, axis2,
                              axis3, axis4, axis5, speed, steering):
-
-    if(abs(axis0) > 0.1):
-        steering = str(90 + 40 * axis0)
-    if(abs(axis5 + 1) > 0.1):
-        speed = 1430 - 20 * (axis5 + 1)
-    elif(abs(axis2 + 1) > 0.1):
-        speed = 1570 + 20 * (axis2 + 1)
+    #
+    # if(abs(axis0) > 0.1):
+    #     steering = str(90 + 40 * axis0)
+    # if(abs(axis5 + 1) > 0.1):
+    #     speed = 1430 - 20 * (axis5 + 1)
+    # elif(abs(axis2 + 1) > 0.1):
+    #     speed = 1570 + 20 * (axis2 + 1)
 
     return (speed, steering)
 
@@ -229,13 +229,13 @@ def main():
     blank_image_count = 0
 
     # Detector Variables
-    detector_lane_height = 250
+    detector_lane_height = 290
 
     foundGreen = False
     greenCount = 0;
 
     # Detector Lines
-    linecount = 3
+    linecount = 4
     leftlines = [0] * linecount
     rightlines = [0] * linecount
     # videonumber = 1
@@ -299,18 +299,21 @@ def main():
         if(detected):
             foundGreen = True
 
-        steering = str((int((steering - 320) / 1.8)) + 90)
-        speed = 57 - int(abs(int(steering) - 90) / 2.4)
-        if(speed < 50):
-            speed = 50
+        steering = str((int((steering - 320) / 1.5)) + 90)
+        # if(int (steering) > 110):
+        #     steering = "145"
+        print(steering)
+        speed = 49 - int(abs(int(steering) - 90) / 2.4)
+        if(speed < 44):
+            speed = 44
         if(foundGreen):
             greenCount = greenCount + 1;
-        if(greenCount > 15):
+        if(greenCount > 3):
             speed = 0;
         if(greenCount > 30):
             steering = "90"
 
-        if(greenCount > 200):
+        if(greenCount > 50):
             greenCount = 0
             foundGreen = False
         direction = "1"
@@ -347,7 +350,7 @@ def main():
         # display = work_image
 ############################################################################################################
         debug = False
-        #debug = True
+        debug = True
         if(debug):
             displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
             displaybot = np.hstack((
@@ -355,6 +358,7 @@ def main():
             display = np.vstack((displaytop, displaybot))
         else:
             display = direction_line_image
+            #display = work_image
         # display = cv2.resize(display, (1500, 750))
 
         main_interface.update_frame(display)

@@ -48,7 +48,7 @@ class LaneDetector(object):
 
         # Lane Detect Modifieres (Two Green Lines)
         self.lane_height = 330
-        self.lane_width = 400 # 300
+        self.lane_width = 500 # 300
         self.lane_screen_size_multiplier = 640
         self.lane_cross_over_color = [0, 255, 0]
         self.lane_direction_line_color = [255, 100, 0]
@@ -180,7 +180,7 @@ class LaneDetector(object):
 
     def greenDetection(self):
 
-        green = self.work_frame[230:330, 0:640]
+        green = self.work_frame[280:330, 190:450]
 
 
 
@@ -189,8 +189,8 @@ class LaneDetector(object):
                                                self.HSV_Green_Lower)
 
         green = cv2.threshold(green, 150, 255, cv2.THRESH_BINARY)[1]
-        # cv2.imshow("test", green)
-        # cv2.waitKey(10)
+        #cv2.imshow("test", green)
+        #cv2.waitKey(10)
         cnts = cv2.findContours(green, cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
@@ -312,20 +312,31 @@ class LaneDetector(object):
         self.lane_height = laneheight
         lefti = 0
         righti = 0
+        oldleft = self.left_line
+        oldright = self.right_line
+        noleft = False
+        noright = False
         for i in range(len(leftlines)):
             if(leftlines[i] != self.lx1 - 1):
                 self.left_line = leftlines[i]
                 lefti = i
                 break
-            if(i == len(leftlines) - 1):
-                self.left_line = self.lx1 - 75
+            if(i == len(leftlines) - 1):    #comment back in
+                self.left_line = self.lx1 - 100 #comment back in
+                noright = True
         for i in range(len(rightlines)):
             if(rightlines[i] != self.lx2 - 1):
                 righti = i
                 self.right_line = rightlines[i]
                 break
-            if(i == len(rightlines) - 1):
-                self.right_line = self.rx2 + 75
+            if(i == len(rightlines) - 1):     #conmment back in
+                self.right_line = self.rx2 + 100   #comment back in
+                noleft = True
+
+        if(noright and noleft):
+            self.left_line = oldleft
+            self.right_line = oldright
+            print("############################")
         #print(self.right_line)
         tX = 0
         tY = 0
@@ -485,27 +496,32 @@ class HSVDetector(LaneDetector):
         # 110 deeper blues #120 purlply #130 purply, #140 pink #150 pink # 160
         # 170 - 180 red
 
-        self.HSV_Green_Upper = np.array([71, 255, 255], dtype="uint8")
-        self.HSV_Green_Lower = np.array([54, 99, 99], dtype="uint8")
+        self.HSV_Green_Upper = np.array([76, 112, 255], dtype="uint8")
+        self.HSV_Green_Lower = np.array([61, 13, 171], dtype="uint8")
 
         self.HSV_Blue_Upper = np.array([135, 255, 255], dtype="uint8")
-        self.HSV_Blue_Lower = np.array([80, 20, 20], dtype="uint8")
+        self.HSV_Blue_Lower = np.array([79, 20, 20], dtype="uint8")
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
 
-        self.HSV_Yellow_Upper = np.array([41, 255, 255], dtype="uint8")
-        self.HSV_Yellow_Lower = np.array([20, 0, 50], dtype="uint8")
+        self.HSV_Yellow_Upper = np.array([41, 161, 255], dtype="uint8")
+        self.HSV_Yellow_Lower = np.array([18, 31, 135], dtype="uint8")
 
         # self.HSV_Yellow_Upper = np.array([0,0,0], dtype = "uint8")
         # self.HSV_Yellow_Lower =  np.array([0,0,0], dtype = "uint8")
 
-        self.HSV_Object_Upper = np.array([20, 255, 255], dtype="uint8")
-        self.HSV_Object_Lower = np.array([0, 100, 20], dtype="uint8")
+        self.HSV_Object_Upper = np.array([165, 255, 54], dtype="uint8")
+        self.HSV_Object_Lower = np.array([143, 70, 0], dtype="uint8")
+
+        #red
+        #self.HSV_Object_Upper = np.array([20, 255, 255], dtype="uint8")
+        #self.HSV_Object_Lower = np.array([0, 100, 20], dtype="uint8")
+
 
         self.HSV_Finish_Upper = np.array([180, 255, 255], dtype="uint8")
         self.HSV_Finish_Lower = np.array([160, 100, 20], dtype="uint8")
 
-        self.edge_low_threshold = 10
-        self.edge_high_threshold = 75
+        self.edge_low_threshold = 0
+        self.edge_high_threshold = 45
 
     def get_lanes(self, base_frame, cropped_frame):
         # HSV_Blue_Upper = self.HSV_Blue_Upper,
