@@ -170,6 +170,7 @@ def user_control_loop(window, joystick_enable, speed, steering, control, directi
 
     joystick_count = window.get_joystick_count()
 
+
     up, down, left, right, control = window.get_key_input()
 
     if control is True:
@@ -216,7 +217,7 @@ def main():
 
     joystick_enable = False
     control = False
-    direction = "0";
+    direction = "0"
     # buttonA = 0 # A Button
     # buttonY = 0 # Y Button
     main_interface = None
@@ -239,6 +240,7 @@ def main():
 
     leftlines = [0] * linecount
     rightlines = [0] * linecount
+    slowtick = False
     # videonumber = 1
     # url = ('Videos/video' + str(videonumber) + '.mp4')
 
@@ -252,9 +254,10 @@ def main():
      detector) = initialize()
 
     print("Initializing..")
-
+    startTick = 0;
+    reverseTick = 0;
     while True:
-
+        startTick = startTick + 1
         start_time = time.time()
 
         work_image = camera.read()
@@ -281,7 +284,8 @@ def main():
          steering,
          canny_edge_image,
          colour_image,
-         detected) = detector.mid_line_calc(
+         detected,
+         slow) = detector.mid_line_calc(
                                             detector_lane_height,
                                             leftlines,
                                             rightlines)
@@ -299,8 +303,8 @@ def main():
 
         if(detected):
             foundGreen = True
-        print(str(steering) + "  test")
-        steering = str((int((steering - 320) / 1.5)) + 90)
+        #print(str(steering) + "  test")
+        steering = str((int((steering - 320) / 2.2)) + 90)
 
         # if(int (steering) > 110):
         #     steering = "145"
@@ -323,6 +327,19 @@ def main():
         if(int(steering) > 145):
             steering = "145"
         direction = "1"
+        if(slow):
+            speed = 40
+            reverseTick = reverseTick  + 1
+        if(slowtick == False and slow):
+            if(reverseTick > 3):
+                slowtick = True
+
+            direction = "2"
+            speed = 50
+
+        if(slow == False):
+            slowTick = 0
+            slowtick = False
         (speed,
          steering,
          control,
@@ -333,6 +350,10 @@ def main():
                                         control=control,
                                         direction=direction)
 
+        # if(startTick  < 20):
+        #     speed = speed + 15
+        #     steering = "90"
+        print(speed)
         if main_interface.get_all_stop():
             mode = "Drive"
             speed = 0
@@ -356,6 +377,7 @@ def main():
         # display = work_image
 ############################################################################################################
         debug = False
+
         #debug = True
         if(debug):
             displaytop = np.hstack((obstacleimg, yellowimg, blueimg))

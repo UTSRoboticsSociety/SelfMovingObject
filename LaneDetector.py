@@ -136,7 +136,7 @@ class LaneDetector(object):
         return value, rise
 
     def obstacleDetection(self):
-        obstacle = self.obstacle_mask[170:280, 0:640]
+        obstacle = self.obstacle_mask[130:280, 0:640]
         obstacle = cv2.GaussianBlur(obstacle, (5, 5), 0)
         obstacle = cv2.threshold(obstacle, 150, 255, cv2.THRESH_BINARY)[1]
         # cv2.imshow("testsS", obstacle)
@@ -316,6 +316,7 @@ class LaneDetector(object):
         oldright = self.right_line
         noleft = False
         noright = False
+        slow = False
         for i in range(len(leftlines)):
             if(leftlines[i] != self.lx1 - 1):
                 self.left_line = leftlines[i]
@@ -336,7 +337,8 @@ class LaneDetector(object):
         if(noright and noleft):
             self.left_line = oldleft
             self.right_line = oldright
-            print("############################")
+            slow = True
+
         #print(self.right_line)
         tX = 0
         tY = 0
@@ -380,7 +382,7 @@ class LaneDetector(object):
 
 
         return (self.overlay_mask, self.mid_line,
-                self.canny_edge_image, self.colour_image, detected)
+                self.canny_edge_image, self.colour_image, detected, slow)
 
 
     def findGap(self, cnts, leftline, rightline, righti, lefti):
@@ -394,7 +396,7 @@ class LaneDetector(object):
         i = len(cnts)
         array[i] = leftline - 25 * lefti
         i = len(cnts) + 1
-        array[i] = rightline + 25 * righti
+        array[i] = rightline + 25 * righti + 50
 
         array.sort()
 
@@ -504,7 +506,7 @@ class HSVDetector(LaneDetector):
     #    self.HSV_Blue_Lower =  np.array([255,255,255], dtype = "uint8")
 
         self.HSV_Yellow_Upper = np.array([41, 161, 255], dtype="uint8")
-        self.HSV_Yellow_Lower = np.array([18, 56, 135], dtype="uint8")
+        self.HSV_Yellow_Lower = np.array([18, 56, 95], dtype="uint8")
 
         # self.HSV_Yellow_Upper = np.array([0,0,0], dtype = "uint8")
         # self.HSV_Yellow_Lower =  np.array([0,0,0], dtype = "uint8")
