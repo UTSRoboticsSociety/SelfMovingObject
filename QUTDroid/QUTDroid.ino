@@ -318,7 +318,7 @@ void loop() {
 	
 	
 #ifdef MANUAL_RC_ENABLED
-	if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 0)
+	if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 2)
 	{
 		CommandWatchdogEnabled = true;
 		SafetyStop();

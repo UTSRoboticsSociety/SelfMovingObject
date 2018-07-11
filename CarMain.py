@@ -34,7 +34,7 @@ def initialize():
     serial_dstdtr = False
     serial_intercharttimeout = None
     serial_usingSerial = True
-    camera = WebcamVideoStream(src=0).start()
+    camera = WebcamVideoStream(src=1).start()
     # camera = WebcamVideoStream(src="C:\\Users\\Lordbordem.lordbordem-PC\\Desktop\\Robosoc\\SelfMovingObject\\Videos\\video2.mp4").start()
 
     seri = Serial2.Serial2(port=serial_port,
@@ -377,8 +377,12 @@ def main():
         # display = work_image
 ############################################################################################################
         debug = False
+<<<<<<< HEAD
 
         #debug = True
+=======
+        debug = True
+>>>>>>> 2c3039a39e079e04c78271f09937824db87cd0b3
         if(debug):
             displaytop = np.hstack((obstacleimg, yellowimg, blueimg))
             displaybot = np.hstack((
