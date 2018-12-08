@@ -1,3 +1,6 @@
+
+#include <Wire.h>
+//#include <SoftwareSerial.h>
 #include <PinChangeInterrupt.h>
 #include <ArduinoJson.h>
 #include "ESC.h"
@@ -35,8 +38,14 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 
 #define LED_PIN 13
 
-#define STEERING_SERVO_DATA_PIN 10
-#define THROTTLE_ESC_DATA_PIN 11
+#define SERIAL_REPORT_ENABLED
+#define SERIAL_REPORT_TX_PIN 13
+#define SERIAL_REPORT_RX_PIN 12
+#define SERIAL_REPORT_BAUD 9600
+#define SERIAL_REPORT_INTERVAL 100
+
+#define STEERING_SERVO_DATA_PIN 9
+#define THROTTLE_ESC_DATA_PIN 6
 
 #define THROTTLE_SPEED_PERIOD_MIN 1000 // Set the Minimum Speed in microseconds
 #define THROTTLE_SPEED_PERIOD_MAX 2000 // Set the Minimum Speed in microseconds
@@ -67,6 +76,10 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #define MANUAL_RC_SWITCH_STATE_DOWN_LIMIT 1750
 
 // Bling Settings
+#ifdef SERIAL_REPORT_ENABLED
+//SoftwareSerial SerialReport(SERIAL_REPORT_RX_PIN, SERIAL_REPORT_TX_PIN);
+#endif // DEBUG
+
 
 // End User Settings
 
@@ -81,12 +94,16 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 Servo SteeringServo; 
 ESC ThrottleController(THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTLE_SPEED_PERIOD_MAX, THROTTLE_SPEED_PERIOD_ARM);
 
+//Adafruit_NeoPixel Indicators(NEOPIXEL_QUANTITY, NEOPIXEL_PIN);
+
 StaticJsonBuffer<200> CommsJSONBuffer;
 bool CommandWatchdogEnabled = false;
 unsigned long commandWatchdogTimer;
 
 struct DriveParameters
 {
+	unsigned char driveMode = 0;
+
 	enum Direction : unsigned char
 	{
 		Forward = 1,
@@ -100,7 +117,13 @@ struct DriveParameters
 
 };
 
+struct I2CTransport
+{
+	DriveParameters DriveData;
+};
+
 DriveParameters DroidCar;
+I2CTransport dataContainer;
 
 void SerialCommsSetup()
 {
@@ -135,11 +158,11 @@ void WatchdogCheck()
 	if (millis() - commandWatchdogTimer > COMMS_COMMAND_TIMEOUT && CommandWatchdogEnabled == true)
 	{
 		SafetyStop();
-		digitalWrite(LED_PIN, HIGH);
+		//digitalWrite(LED_PIN, HIGH);
 	}
 	else
 	{
-		digitalWrite(LED_PIN, LOW);
+		//digitalWrite(LED_PIN, LOW);
 	}
 }
 
@@ -303,6 +326,34 @@ void ManualControlProcessor()
 
 #endif // MANUAL_RC_ENABLED
 
+#ifdef SERIAL_REPORT_ENABLED
+
+void SerialReportSetup()
+{
+	Wire.begin(0);
+}
+
+void SerialReportService()
+{
+	static unsigned long serialReportTimer;
+	if (millis() - serialReportTimer >= SERIAL_REPORT_INTERVAL)
+	{
+		Wire.beginTransmission(0x10);
+		if (!Wire.endTransmission())
+		{
+			dataContainer.DriveData = DroidCar;
+			Wire.beginTransmission(0x10);
+			Wire.write(reinterpret_cast<unsigned char*>(&dataContainer), sizeof(dataContainer));
+			Wire.endTransmission();
+		}
+		
+		serialReportTimer = millis();
+	}
+}
+
+#endif // SERIAL_REPORT_ENABLED
+
+
 void setup() 
 {
 	SerialCommsSetup();
@@ -312,6 +363,10 @@ void setup()
 #ifdef MANUAL_RC_ENABLED
 	ManualControlSetup();
 #endif // MANUAL_RC_ENABLED
+
+#ifdef SERIAL_REPORT_ENABLED
+	SerialReportSetup();
+#endif // SERIAL_REPORT_ENABLED
 }
 
 void loop() {
@@ -320,15 +375,18 @@ void loop() {
 #ifdef MANUAL_RC_ENABLED
 	if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 2)
 	{
+		DroidCar.driveMode = 0;
 		CommandWatchdogEnabled = true;
 		SafetyStop();
 	}
 	else if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 1) {
+		DroidCar.driveMode = 1;
 		CommandWatchdogEnabled = false;
 		ManualControlProcessor();
 	}
 	else
 	{
+		DroidCar.driveMode = 2;
 		CommandWatchdogEnabled = true;
 		SerialCommandProcessor();
 	}
@@ -337,7 +395,8 @@ void loop() {
 #endif // MANUAL_RC_ENABLED
 	WatchdogCheck();
 	DriveUpdate();
+#ifdef SERIAL_REPORT_ENABLED
+	SerialReportService();
+#endif // SERIAL_REPORT_ENABLED
+
 }   
-
-
-
