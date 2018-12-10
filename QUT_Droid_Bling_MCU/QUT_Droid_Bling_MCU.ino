@@ -9,7 +9,7 @@
 #include <Adafruit_NeoPixel.h>
 
 #define NEOPIXEL_PIN 11
-#define NEOPIXEL_QUANTITY 6
+#define NEOPIXEL_QUANTITY 28
 
 struct DriveParameters
 {
@@ -77,34 +77,56 @@ void TurnIndicatorService()
 	{
 		Indicators.setPixelColor(0, 250, 50, 0);
 		Indicators.setPixelColor(1, 250, 50, 0);
+    Indicators.setPixelColor(27, 250, 50, 0);
+
 
 		Indicators.setPixelColor(4, 250, 50, 0);
 		Indicators.setPixelColor(5, 250, 50, 0);
+    Indicators.setPixelColor(22, 250, 50, 0);
+
 	}
 	else if (DroidCar.steeringAngle < 80 && blinkState == true)
 	{
 		Indicators.setPixelColor(0, 250, 50, 0);
 		Indicators.setPixelColor(1, 250, 50, 0);
+    Indicators.setPixelColor(27, 250, 50, 0);
+
 
 		Indicators.setPixelColor(4, 0, 0, 0);
 		Indicators.setPixelColor(5, 0, 0, 0);
+    Indicators.setPixelColor(22, 0, 0, 0);
+
 	}
 	else if (DroidCar.steeringAngle > 100 && blinkState == true) {
 		Indicators.setPixelColor(0, 0, 0, 0);
 		Indicators.setPixelColor(1, 0, 0, 0);
+    Indicators.setPixelColor(27, 0, 0, 0);
+
 
 		Indicators.setPixelColor(4, 250, 50, 0);
 		Indicators.setPixelColor(5, 250, 50, 0);
+    Indicators.setPixelColor(22, 250, 50, 0);
+
 	}
 	else
 	{
 		Indicators.setPixelColor(0, 0, 0, 0);
 		Indicators.setPixelColor(1, 0, 0, 0);
+    Indicators.setPixelColor(27, 0, 0, 0);
+
 
 		Indicators.setPixelColor(4, 0, 0, 0);
 		Indicators.setPixelColor(5, 0, 0, 0);
+    Indicators.setPixelColor(22, 0, 0, 0);
+
 	}
 
+}
+
+void SetUnderLights(int r,int g,int b){
+  for(int i = 6; i < (6 + 16); i ++){
+      Indicators.setPixelColor(i, r, g, b);
+  }
 }
 
 void BrakeIndicatorService()
@@ -122,10 +144,25 @@ void BrakeIndicatorService()
 	{
 		Indicators.setPixelColor(2, 250, 0, 0);
 		Indicators.setPixelColor(3, 250, 0, 0);
+    //Indicators.setPixelColor(22, 250, 0, 0);
+    Indicators.setPixelColor(23, 250, 0, 0);
+    Indicators.setPixelColor(24, 250, 0, 0);
+    Indicators.setPixelColor(25, 250, 0, 0);
+    Indicators.setPixelColor(26, 250, 0, 0);
+    //Indicators.setPixelColor(27, 250, 0, 0);
+   
+    
+   
 	}
 	else if (DroidCar.throttle > 20 && DroidCar.travelDirection == DroidCar.Backward) {
 		Indicators.setPixelColor(2, 250, 250, 250);
 		Indicators.setPixelColor(3, 250, 250, 250);
+    //Indicators.setPixelColor(22, 250, 250, 250);
+    Indicators.setPixelColor(23, 250, 250, 250);
+    Indicators.setPixelColor(24, 250, 250, 250);
+    Indicators.setPixelColor(25, 250, 250, 250);
+    Indicators.setPixelColor(26, 250, 250, 250);
+    //Indicators.setPixelColor(27, 250, 250, 250);
 	}
 	else if (DroidCar.throttle >= 30 && DroidCar.travelDirection == DroidCar.Forward)
 	{
@@ -133,17 +170,36 @@ void BrakeIndicatorService()
 		{
 			Indicators.setPixelColor(2, 255, 0, 0);
 			Indicators.setPixelColor(3, 0, 0, 255);
+     // Indicators.setPixelColor(22, 255, 0, 0);
+      Indicators.setPixelColor(23, 0, 0, 255);
+      Indicators.setPixelColor(24, 255, 0, 0);
+      Indicators.setPixelColor(25, 0, 0, 255);
+      Indicators.setPixelColor(26, 255, 0, 0);
+      //Indicators.setPixelColor(27, 0, 0, 255);
+
 		}
 		else
 		{
 			Indicators.setPixelColor(2, 0, 0, 255);
 			Indicators.setPixelColor(3, 255, 0, 0);
+      //Indicators.setPixelColor(22, 0, 0, 255);
+      Indicators.setPixelColor(23, 255, 0, 0);
+      Indicators.setPixelColor(24, 0, 0, 255);
+      Indicators.setPixelColor(25, 255, 0, 0);
+      Indicators.setPixelColor(26, 0, 0, 255);
+      //Indicators.setPixelColor(27, 255, 0, 0);
 		}
 	}
 	else
 	{
 		Indicators.setPixelColor(2, 0, 0, 0);
 		Indicators.setPixelColor(3, 0, 0, 0);
+    //Indicators.setPixelColor(22, 0, 0, 0);
+    Indicators.setPixelColor(23, 0, 0, 0);
+    Indicators.setPixelColor(24, 0, 0, 0);
+    Indicators.setPixelColor(25, 0, 0, 0);
+    Indicators.setPixelColor(26, 0, 0, 0);
+    //Indicators.setPixelColor(27, 0, 0, 0);
 	}
 }
 
@@ -172,5 +228,13 @@ void loop() {
 		}
 		break;
 	}
+
+  double currentTime = millis();
+  int redCol = int ((sin(currentTime / (911.0 / 3)) + 1) * 100.0);
+  int greenCol = int((sin(currentTime / (533.0 / 3)) + 1) * 100.0);
+  int blueCol = int ((sin(currentTime / (747.0 / 3)) + 1) * 100.0);
+  
+  SetUnderLights(redCol, greenCol, blueCol);
+
 	Indicators.show();
 }

@@ -2,6 +2,8 @@
 #include <ArduinoJson.h>
 #include "ESC.h"
 #include <Servo.h>
+#include "AX12A.h" /*https://github.com/ThingType/AX-12A-servo-library*/
+
 
 /*
 UTS Robotics Society - QUT DRC Motor Controller
@@ -41,6 +43,9 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #define SERIAL_REPORT_BAUD 9600
 #define SERIAL_REPORT_INTERVAL 100
 
+#define PAN_SERVO_DATA_PIN 10
+#define TILT_SERVO_DATA_PIN 11
+
 #define STEERING_SERVO_DATA_PIN 9
 #define THROTTLE_ESC_DATA_PIN 6
 
@@ -71,6 +76,8 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 
 #define MANUAL_RC_STEERING_CH  1
 #define MANUAL_RC_THROTTLE_CH	2
+#define MANUAL_RC_PAN_CH 4
+#define MANUAL_RC_TILT_CH 3
 #define MANUAL_RC_MODE_AND_E_STOP_KILL_CH 5  
 
 #define MANUAL_RC_RECEIVER_MAX_PERIOD 2000
@@ -94,7 +101,8 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #ifndef THROTTLE_SPEED_LIMITED_MIN
 #define THROTTLE_SPEED_LIMITED_MIN THROTTLE_SPEED_PERIOD_MIN
 #endif 
-
+Servo PanServo;
+Servo TiltServo;
 Servo SteeringServo;
 ESC ThrottleController(THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTLE_SPEED_PERIOD_MAX, THROTTLE_SPEED_PERIOD_ARM);
 
@@ -249,6 +257,8 @@ struct RCControlModel
 	unsigned int switch1Period;
 	unsigned int steeringPeriod;
 	unsigned int throttlePeriod;
+  unsigned int panPeriod;
+  unsigned int tiltPeriod;
 };
 
 RCControlModel RCController1;
@@ -263,6 +273,8 @@ void PPMUpdater()
 	}
 	RCController1.steeringPeriod = PPMPeriods[MANUAL_RC_STEERING_CH];
 	RCController1.throttlePeriod = PPMPeriods[MANUAL_RC_THROTTLE_CH];
+  RCController1.panPeriod = PPMPeriods[MANUAL_RC_PAN_CH];
+  RCController1.tiltPeriod = PPMPeriods[MANUAL_RC_TILT_CH];
 	RCController1.switch1Period = PPMPeriods[MANUAL_RC_MODE_AND_E_STOP_KILL_CH];
 
 	if (RCController1.switch1Period <= MANUAL_RC_SWITCH_STATE_UP_LIMIT)
@@ -309,6 +321,21 @@ void ManualControlProcessor()
 	}
 }
 
+void PanTiltSetup()
+{
+  PanServo.attach(PAN_SERVO_DATA_PIN);
+  TiltServo.attach(TILT_SERVO_DATA_PIN);
+  PanServo.write(90);
+  TiltServo.write(90);
+}
+
+void PanTileProcessor()
+{
+  PanServo.write(map(RCController1.panPeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 180));
+  TiltServo.write(map(RCController1.tiltPeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 180));
+
+}
+
 #endif // MANUAL_RC_ENABLED
 
 #ifdef SERIAL_REPORT_ENABLED
@@ -349,6 +376,7 @@ void setup()
 
 #ifdef MANUAL_RC_ENABLED
 	ManualControlSetup();
+  PanTiltSetup();
 #endif // MANUAL_RC_ENABLED
 
 #ifdef SERIAL_REPORT_ENABLED
@@ -369,6 +397,7 @@ void loop() {
 		DroidCar.driveMode = 1;
 		CommandWatchdogEnabled = false;
 		ManualControlProcessor();
+    PanTileProcessor();
 	}
 	else
 	{
