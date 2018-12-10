@@ -69,7 +69,7 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #define PPM_DATA_PIN 2
 #define PPM_CHANNELS 10
 
-#define MANUAL_RC_STEERING_CH  4
+#define MANUAL_RC_STEERING_CH  1
 #define MANUAL_RC_THROTTLE_CH	2
 #define MANUAL_RC_MODE_AND_E_STOP_KILL_CH 5  
 
@@ -261,10 +261,23 @@ void PPMUpdater()
 	{
 		PPMPeriods[i] = ppm.latestValidChannelValue(i,0);
 	}
-
 	RCController1.steeringPeriod = PPMPeriods[MANUAL_RC_STEERING_CH];
 	RCController1.throttlePeriod = PPMPeriods[MANUAL_RC_THROTTLE_CH];
 	RCController1.switch1Period = PPMPeriods[MANUAL_RC_MODE_AND_E_STOP_KILL_CH];
+
+	if (RCController1.switch1Period <= MANUAL_RC_SWITCH_STATE_UP_LIMIT)
+	{
+		RCController1.switch1State = 2;
+	}
+	else if (RCController1.switch1Period > MANUAL_RC_SWITCH_STATE_UP_LIMIT && RCController1.switch1Period < MANUAL_RC_SWITCH_STATE_DOWN_LIMIT)
+	{
+		RCController1.switch1State = 1;
+	}
+	else
+	{
+		RCController1.switch1State = 0;
+	}
+
 }
 
 
@@ -294,7 +307,6 @@ void ManualControlProcessor()
 		DroidCar.travelDirection = DroidCar.Neutral;
 		DroidCar.throttle = 0;
 	}
-	
 }
 
 #endif // MANUAL_RC_ENABLED
