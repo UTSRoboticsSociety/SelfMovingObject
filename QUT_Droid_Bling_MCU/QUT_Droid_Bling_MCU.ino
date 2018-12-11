@@ -31,6 +31,7 @@ struct DriveParameters
 struct I2CTransport
 {
 	DriveParameters DriveData;
+	unsigned int PPMChannels[10];
 };
 
 
@@ -38,6 +39,8 @@ DriveParameters DroidCar;
 I2CTransport dataContainer;
 
 Adafruit_NeoPixel Indicators(NEOPIXEL_QUANTITY, NEOPIXEL_PIN);
+
+bool boostMode = false;
 
 // the setup function runs once when you press reset or power the board
 
@@ -51,12 +54,12 @@ void wireRx(int bytes)
 }
 
 void setup() {
-	
+
 	Indicators.begin();
-	Indicators.setBrightness(150);
+	Indicators.setBrightness(255);
 	for (int i = 0; i < NEOPIXEL_QUANTITY; i++)
 	{
-		Indicators.setPixelColor(i,250,0,0);
+		Indicators.setPixelColor(i, 250, 0, 0);
 	}
 
 	Indicators.show();
@@ -77,64 +80,74 @@ void TurnIndicatorService()
 	{
 		Indicators.setPixelColor(0, 250, 50, 0);
 		Indicators.setPixelColor(1, 250, 50, 0);
-    Indicators.setPixelColor(27, 250, 50, 0);
+		Indicators.setPixelColor(27, 250, 50, 0);
 
 
 		Indicators.setPixelColor(4, 250, 50, 0);
 		Indicators.setPixelColor(5, 250, 50, 0);
-    Indicators.setPixelColor(22, 250, 50, 0);
+		Indicators.setPixelColor(22, 250, 50, 0);
 
 	}
 	else if (DroidCar.steeringAngle < 80 && blinkState == true)
 	{
 		Indicators.setPixelColor(0, 250, 50, 0);
 		Indicators.setPixelColor(1, 250, 50, 0);
-    Indicators.setPixelColor(27, 250, 50, 0);
+		Indicators.setPixelColor(27, 250, 50, 0);
 
 
 		Indicators.setPixelColor(4, 0, 0, 0);
 		Indicators.setPixelColor(5, 0, 0, 0);
-    Indicators.setPixelColor(22, 0, 0, 0);
+		Indicators.setPixelColor(22, 0, 0, 0);
 
 	}
 	else if (DroidCar.steeringAngle > 100 && blinkState == true) {
 		Indicators.setPixelColor(0, 0, 0, 0);
 		Indicators.setPixelColor(1, 0, 0, 0);
-    Indicators.setPixelColor(27, 0, 0, 0);
+		Indicators.setPixelColor(27, 0, 0, 0);
 
 
 		Indicators.setPixelColor(4, 250, 50, 0);
 		Indicators.setPixelColor(5, 250, 50, 0);
-    Indicators.setPixelColor(22, 250, 50, 0);
+		Indicators.setPixelColor(22, 250, 50, 0);
 
 	}
 	else
 	{
 		Indicators.setPixelColor(0, 0, 0, 0);
 		Indicators.setPixelColor(1, 0, 0, 0);
-    Indicators.setPixelColor(27, 0, 0, 0);
+		Indicators.setPixelColor(27, 0, 0, 0);
 
 
 		Indicators.setPixelColor(4, 0, 0, 0);
 		Indicators.setPixelColor(5, 0, 0, 0);
-    Indicators.setPixelColor(22, 0, 0, 0);
+		Indicators.setPixelColor(22, 0, 0, 0);
 
 	}
 
 }
 
-void SetUnderLights(int r,int g,int b){
-  for(int i = 6; i < (6 + 16); i ++){
-      Indicators.setPixelColor(i, r, g, b);
-  }
+void SetUnderLights(int r, int g, int b) {
+	for (int i = 6; i < (6 + 16); i++) {
+		Indicators.setPixelColor(i, r, g, b);
+	}
 }
 
 void BrakeIndicatorService()
 {
 	static bool flasher;
 	static unsigned long flasherTimer;
+	static unsigned long flasherDelay;
 
-	if (millis() - flasherTimer >= 250)
+	if (boostMode == true)
+	{
+		flasherDelay = 100;
+	}
+	else
+	{
+		flasherDelay = 250;
+	}
+
+	if (millis() - flasherTimer >= flasherDelay)
 	{
 		flasher = !flasher;
 		flasherTimer = millis();
@@ -144,25 +157,25 @@ void BrakeIndicatorService()
 	{
 		Indicators.setPixelColor(2, 250, 0, 0);
 		Indicators.setPixelColor(3, 250, 0, 0);
-    //Indicators.setPixelColor(22, 250, 0, 0);
-    Indicators.setPixelColor(23, 250, 0, 0);
-    Indicators.setPixelColor(24, 250, 0, 0);
-    Indicators.setPixelColor(25, 250, 0, 0);
-    Indicators.setPixelColor(26, 250, 0, 0);
-    //Indicators.setPixelColor(27, 250, 0, 0);
-   
-    
-   
+		//Indicators.setPixelColor(22, 250, 0, 0);
+		Indicators.setPixelColor(23, 250, 0, 0);
+		Indicators.setPixelColor(24, 250, 0, 0);
+		Indicators.setPixelColor(25, 250, 0, 0);
+		Indicators.setPixelColor(26, 250, 0, 0);
+		//Indicators.setPixelColor(27, 250, 0, 0);
+
+
+
 	}
 	else if (DroidCar.throttle > 20 && DroidCar.travelDirection == DroidCar.Backward) {
 		Indicators.setPixelColor(2, 250, 250, 250);
 		Indicators.setPixelColor(3, 250, 250, 250);
-    //Indicators.setPixelColor(22, 250, 250, 250);
-    Indicators.setPixelColor(23, 250, 250, 250);
-    Indicators.setPixelColor(24, 250, 250, 250);
-    Indicators.setPixelColor(25, 250, 250, 250);
-    Indicators.setPixelColor(26, 250, 250, 250);
-    //Indicators.setPixelColor(27, 250, 250, 250);
+		//Indicators.setPixelColor(22, 250, 250, 250);
+		Indicators.setPixelColor(23, 250, 250, 250);
+		Indicators.setPixelColor(24, 250, 250, 250);
+		Indicators.setPixelColor(25, 250, 250, 250);
+		Indicators.setPixelColor(26, 250, 250, 250);
+		//Indicators.setPixelColor(27, 250, 250, 250);
 	}
 	else if (DroidCar.throttle >= 30 && DroidCar.travelDirection == DroidCar.Forward)
 	{
@@ -170,42 +183,49 @@ void BrakeIndicatorService()
 		{
 			Indicators.setPixelColor(2, 255, 0, 0);
 			Indicators.setPixelColor(3, 0, 0, 255);
-     // Indicators.setPixelColor(22, 255, 0, 0);
-      Indicators.setPixelColor(23, 0, 0, 255);
-      Indicators.setPixelColor(24, 255, 0, 0);
-      Indicators.setPixelColor(25, 0, 0, 255);
-      Indicators.setPixelColor(26, 255, 0, 0);
-      //Indicators.setPixelColor(27, 0, 0, 255);
+			// Indicators.setPixelColor(22, 255, 0, 0);
+			Indicators.setPixelColor(23, 0, 0, 255);
+			Indicators.setPixelColor(24, 255, 0, 0);
+			Indicators.setPixelColor(25, 0, 0, 255);
+			Indicators.setPixelColor(26, 255, 0, 0);
+			//Indicators.setPixelColor(27, 0, 0, 255);
 
 		}
 		else
 		{
 			Indicators.setPixelColor(2, 0, 0, 255);
 			Indicators.setPixelColor(3, 255, 0, 0);
-      //Indicators.setPixelColor(22, 0, 0, 255);
-      Indicators.setPixelColor(23, 255, 0, 0);
-      Indicators.setPixelColor(24, 0, 0, 255);
-      Indicators.setPixelColor(25, 255, 0, 0);
-      Indicators.setPixelColor(26, 0, 0, 255);
-      //Indicators.setPixelColor(27, 255, 0, 0);
+			//Indicators.setPixelColor(22, 0, 0, 255);
+			Indicators.setPixelColor(23, 255, 0, 0);
+			Indicators.setPixelColor(24, 0, 0, 255);
+			Indicators.setPixelColor(25, 255, 0, 0);
+			Indicators.setPixelColor(26, 0, 0, 255);
+			//Indicators.setPixelColor(27, 255, 0, 0);
 		}
 	}
 	else
 	{
 		Indicators.setPixelColor(2, 0, 0, 0);
 		Indicators.setPixelColor(3, 0, 0, 0);
-    //Indicators.setPixelColor(22, 0, 0, 0);
-    Indicators.setPixelColor(23, 0, 0, 0);
-    Indicators.setPixelColor(24, 0, 0, 0);
-    Indicators.setPixelColor(25, 0, 0, 0);
-    Indicators.setPixelColor(26, 0, 0, 0);
-    //Indicators.setPixelColor(27, 0, 0, 0);
+		//Indicators.setPixelColor(22, 0, 0, 0);
+		Indicators.setPixelColor(23, 0, 0, 0);
+		Indicators.setPixelColor(24, 0, 0, 0);
+		Indicators.setPixelColor(25, 0, 0, 0);
+		Indicators.setPixelColor(26, 0, 0, 0);
+		//Indicators.setPixelColor(27, 0, 0, 0);
 	}
 }
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-
+	if (dataContainer.PPMChannels[6] >= 1500) 
+	{
+		boostMode = true;
+	}
+	else
+	{
+		boostMode = false;
+	}
 	switch (DroidCar.driveMode)
 	{
 	case 0:
@@ -229,12 +249,45 @@ void loop() {
 		break;
 	}
 
-  double currentTime = millis();
-  int redCol = int ((sin(currentTime / (911.0 / 3)) + 1) * 100.0);
-  int greenCol = int((sin(currentTime / (533.0 / 3)) + 1) * 100.0);
-  int blueCol = int ((sin(currentTime / (747.0 / 3)) + 1) * 100.0);
-  
-  SetUnderLights(redCol, greenCol, blueCol);
+	double currentTime = millis();
+	int redCol = int((sin(currentTime / (911.0 / 3)) + 1) * 100.0);
+	int greenCol = int((sin(currentTime / (533.0 / 3)) + 1) * 100.0);
+	int blueCol = int((sin(currentTime / (747.0 / 3)) + 1) * 100.0);
+	if (boostMode == true && DroidCar.driveMode != 0)
+	{
+		static unsigned long blinkers;
+		static bool blinkerState;
+
+		if (millis() - blinkers >= 100)
+		{
+			blinkerState = !blinkerState;
+			blinkers = millis();
+		}
+
+		if (blinkerState)
+		{
+			for (int i = 6; i < (6 + 8); i++) {
+				Indicators.setPixelColor(i, 255, 0, 0);
+			}
+			for (int i = 6 + 8; i < (6 + 8 + 8); i++) {
+				Indicators.setPixelColor(i, 0, 0, 255);
+			}
+		}
+		else
+		{
+			for (int i = 6; i < (6 + 8); i++) {
+				Indicators.setPixelColor(i, 0, 0, 255);
+			}
+			for (int i = 6 + 8; i < (6 + 8 + 8); i++) {
+				Indicators.setPixelColor(i, 255, 0, 0);
+			}
+		}
+		
+	}
+	else
+	{
+		SetUnderLights(redCol, greenCol, blueCol);
+	}
 
 	Indicators.show();
 }

@@ -2,7 +2,7 @@
 #include <ArduinoJson.h>
 #include "ESC.h"
 #include <Servo.h>
-#include "AX12A.h" /*https://github.com/ThingType/AX-12A-servo-library*/
+//#include "AX12A.h" /*https://github.com/ThingType/AX-12A-servo-library*/
 
 
 /*
@@ -74,11 +74,12 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #define PPM_DATA_PIN 2
 #define PPM_CHANNELS 10
 
-#define MANUAL_RC_STEERING_CH  1
+#define MANUAL_RC_STEERING_CH  4
 #define MANUAL_RC_THROTTLE_CH	2
-#define MANUAL_RC_PAN_CH 4
+#define MANUAL_RC_PAN_CH 8
 #define MANUAL_RC_TILT_CH 3
 #define MANUAL_RC_MODE_AND_E_STOP_KILL_CH 5  
+#define MANUAL_RC_BOOST_SWITCH_CH 8
 
 #define MANUAL_RC_RECEIVER_MAX_PERIOD 2000
 #define MANUAL_RC_RECEIVER_MIN_PERIOD 1000
@@ -101,8 +102,7 @@ Example: {"Mode" : "Drive","Throttle" : "255","Direction" : "1","Steering" : "18
 #ifndef THROTTLE_SPEED_LIMITED_MIN
 #define THROTTLE_SPEED_LIMITED_MIN THROTTLE_SPEED_PERIOD_MIN
 #endif 
-Servo PanServo;
-Servo TiltServo;
+
 Servo SteeringServo;
 ESC ThrottleController(THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTLE_SPEED_PERIOD_MAX, THROTTLE_SPEED_PERIOD_ARM);
 
@@ -110,6 +110,9 @@ ESC ThrottleController(THROTTLE_ESC_DATA_PIN, THROTTLE_SPEED_PERIOD_MIN, THROTTL
 
 StaticJsonBuffer<200> CommsJSONBuffer;
 bool CommandWatchdogEnabled = false;
+
+bool SpeedLimiter = true;
+
 unsigned long commandWatchdogTimer;
 
 struct DriveParameters
@@ -132,6 +135,7 @@ struct DriveParameters
 struct I2CTransport
 {
 	DriveParameters DriveData;
+	unsigned int PPMChannels[PPM_CHANNELS];
 };
 
 DriveParameters DroidCar;
@@ -233,7 +237,12 @@ void DriveUpdate() {
 	default:
 		break;
 	}
-	ThrottleController.speed(constrain(speedPeriodRaw, THROTTLE_SPEED_LIMITED_MIN, THROTTLE_SPEED_LIMITED_MAX));
+	
+	if (SpeedLimiter == true)
+	{
+		speedPeriodRaw = constrain(speedPeriodRaw, THROTTLE_SPEED_LIMITED_MIN, THROTTLE_SPEED_LIMITED_MAX);
+	}
+	ThrottleController.speed(speedPeriodRaw);
 
 }
 
@@ -249,7 +258,7 @@ unsigned long SteeringPeriod;
 unsigned long ThrottlePeriod;
 unsigned long ActivatePeriod;
 
-unsigned int PPMPeriods[PPM_CHANNELS];
+unsigned int PPMPeriods[PPM_CHANNELS + 1];
 
 struct RCControlModel
 {
@@ -257,24 +266,32 @@ struct RCControlModel
 	unsigned int switch1Period;
 	unsigned int steeringPeriod;
 	unsigned int throttlePeriod;
-  unsigned int panPeriod;
-  unsigned int tiltPeriod;
+	unsigned int panPeriod;
+	unsigned int tiltPeriod;
 };
 
 RCControlModel RCController1;
 
 PPMReader ppm(PPM_DATA_PIN, PPM_CHANNELS);
 
+Servo PanServo;
+Servo TiltServo;
+
 void PPMUpdater()
 {
 	for (int i = 0; i < PPM_CHANNELS; i++)
 	{
 		PPMPeriods[i] = ppm.latestValidChannelValue(i,0);
+		dataContainer.PPMChannels[i] = PPMPeriods[i];
+		//Serial.print(PPMPeriods[i]);
+		//Serial.print(',');
+		
 	}
+	//Serial.println("");
 	RCController1.steeringPeriod = PPMPeriods[MANUAL_RC_STEERING_CH];
 	RCController1.throttlePeriod = PPMPeriods[MANUAL_RC_THROTTLE_CH];
-  RCController1.panPeriod = PPMPeriods[MANUAL_RC_PAN_CH];
-  RCController1.tiltPeriod = PPMPeriods[MANUAL_RC_TILT_CH];
+	RCController1.panPeriod = PPMPeriods[MANUAL_RC_PAN_CH];
+	RCController1.tiltPeriod = PPMPeriods[MANUAL_RC_TILT_CH];
 	RCController1.switch1Period = PPMPeriods[MANUAL_RC_MODE_AND_E_STOP_KILL_CH];
 
 	if (RCController1.switch1Period <= MANUAL_RC_SWITCH_STATE_UP_LIMIT)
@@ -290,6 +307,14 @@ void PPMUpdater()
 		RCController1.switch1State = 0;
 	}
 
+	if (PPMPeriods[MANUAL_RC_BOOST_SWITCH_CH] <= MANUAL_RC_SWITCH_STATE_UP_LIMIT)
+	{
+		SpeedLimiter = true;
+	}
+	else
+	{
+		SpeedLimiter = false;
+	}
 }
 
 
@@ -304,6 +329,8 @@ void ManualControlSetup()
 void ManualControlProcessor()
 {
 	DroidCar.steeringAngle = map(RCController1.steeringPeriod, MANUAL_RC_RECEIVER_MIN_PERIOD, MANUAL_RC_RECEIVER_MAX_PERIOD, 0, 180);
+
+
 	if (RCController1.throttlePeriod > (MANUAL_RC_RECEIVER_MIN_PERIOD + MANUAL_RC_RECEIVER_MAX_PERIOD) / 2)
 	{
 		DroidCar.travelDirection = DroidCar.Forward;
@@ -387,6 +414,7 @@ void setup()
 void loop() {
 #ifdef MANUAL_RC_ENABLED
 	PPMUpdater();
+	PanTileProcessor();
 	if (digitalRead(MANUAL_RC_ON_BOARD_ENABLE_PIN) == HIGH && RCController1.switch1State == 2)
 	{
 		DroidCar.driveMode = 0;
@@ -397,7 +425,6 @@ void loop() {
 		DroidCar.driveMode = 1;
 		CommandWatchdogEnabled = false;
 		ManualControlProcessor();
-    PanTileProcessor();
 	}
 	else
 	{
