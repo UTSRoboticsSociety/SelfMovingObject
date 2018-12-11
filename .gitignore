@@ -113,3 +113,5 @@ QUTDroid/QUTDroid.vcxproj.filters
 QUTDroid/Debug/
 QUTDroid/__vm/
 QUTDroid/Release/
+QUTDroid/.vs/QUTDroid/v15/Solution.VC.db-wal
+QUTDroid/.vs/QUTDroid/v15/Solution.VC.db-shm
